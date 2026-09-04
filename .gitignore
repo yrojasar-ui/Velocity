@@ -1,0 +1,109 @@
+# ============================================
+# Velocity
+# Node.js / TypeScript / Vite / PlayCanvas
+# ============================================
+
+# Dependencies
+node_modules/
+
+# Build outputs
+dist/
+build/
+out/
+
+# Vite
+.vite/
+
+# TypeScript
+*.tsbuildinfo
+
+# Tests / Coverage
+coverage/
+.nyc_output/
+
+# Environment files
+.env
+.env.local
+.env.development
+.env.development.local
+.env.test
+.env.test.local
+.env.production
+.env.production.local
+
+# Keep environment template
+!.env.example
+
+# Logs
+logs/
+*.log
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+pnpm-debug.log*
+
+# Cache / Temporary
+.cache/
+.tmp/
+temp/
+tmp/
+*.tmp
+
+# ESLint cache
+.eslintcache
+
+# Prettier cache
+.prettier-cache
+
+# OS files
+.DS_Store
+Thumbs.db
+desktop.ini
+
+# Windows
+$RECYCLE.BIN/
+System Volume Information/
+
+# IDEs / Editors
+.vscode/*
+!.vscode/extensions.json
+!.vscode/settings.json
+
+.idea/
+*.suo
+*.ntvs*
+*.njsproj
+*.sln
+*.sw?
+*~
+
+# Runtime / process files
+*.pid
+*.pid.lock
+
+# Package manager miscellaneous
+.pnpm-store/
+.yarn/
+.pnp.*
+
+# Local development artifacts
+.local/
+artifacts/
+
+# Security / certificates / keys
+*.pem
+*.key
+*.p12
+*.pfx
+
+# Database local/dev artifacts
+*.sqlite
+*.sqlite3
+*.db
+
+# Docker local override
+docker-compose.override.yml
+
+# Benchmark / profiler output
+*.cpuprofile
+*.heapprofile
