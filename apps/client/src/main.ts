@@ -21,6 +21,7 @@ import {
 } from "playcanvas";
 
 import { PointerLock } from "./core/input/PointerLock";
+import { MovementLabControls } from "./debug/MovementLabControls";
 import { MovementTelemetry } from "./debug/MovementTelemetry";
 import { CharacterMotor } from "./game/player/CharacterMotor";
 import { PlayerInput } from "./game/player/PlayerInput";
@@ -95,8 +96,12 @@ async function startClient(): Promise<ClientRuntime> {
   light.setEulerAngles(55, 35, 0);
   application.root.addChild(light);
 
-  createMovementLab(application);
-  const player = createPlayerRig(application, movementConfig);
+  const movementLab = createMovementLab(application);
+  const player = createPlayerRig(
+    application,
+    movementConfig,
+    movementLab.spawnPosition,
+  );
   const rigidBodySystem = application.systems.rigidbody;
   const keyboard = application.keyboard;
   const mouse = application.mouse;
@@ -146,6 +151,11 @@ async function startClient(): Promise<ClientRuntime> {
     playerLook,
     pointerLock,
   );
+  const movementLabControls = new MovementLabControls(
+    telemetryElement,
+    player.rigidBody,
+    movementLab.spawnPosition,
+  );
 
   const updateSubscription = application.on("update", (deltaTime: number) => {
     const input = playerInput.read();
@@ -176,6 +186,7 @@ async function startClient(): Promise<ClientRuntime> {
       destroyed = true;
       window.removeEventListener("resize", handleResize);
       updateSubscription.off();
+      movementLabControls.destroy();
       pointerLock.destroy();
       playerInput.destroy();
       application.destroy();

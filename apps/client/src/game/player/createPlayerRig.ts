@@ -19,9 +19,10 @@ export interface PlayerRig {
 export function createPlayerRig(
   application: AppBase,
   config: Readonly<MovementConfig>,
+  spawnPosition: Readonly<Vec3>,
 ): PlayerRig {
   const root = new Entity("Player Physics Root");
-  root.setPosition(0, 2, 6);
+  root.setPosition(spawnPosition.x, spawnPosition.y, spawnPosition.z);
   application.root.addChild(root);
   root.addComponent("collision", {
     type: "capsule",
