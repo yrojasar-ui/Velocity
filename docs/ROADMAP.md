@@ -462,49 +462,35 @@ These are not committed roadmap items.
 
 ---
 
-## Development Workflow**
+# Development Workflow
 
 Each change should follow:
 
+```text
 Issue
-
 ↓
-
 Feature branch
-
 ↓
-
 Implementation
-
 ↓
-
 Tests
-
 ↓
-
 Pull Request
-
 ↓
-
 CI
-
 ↓
-
 Code review
-
 ↓
-
 Acceptance / runtime validation
-
 ↓
-
 Gameplay validation when applicable
-
 ↓
-
 Merge
+```
 
 ---
+
+
 # Definition of Done
 
 A development task is Done only when:
