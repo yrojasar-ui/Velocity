@@ -56,7 +56,7 @@ Create a stable engineering foundation.
 * configure production build;
 * configure engineering diagnostics and quality tooling.
 
-## Required Commands
+## Required Root Commands
 
 ```text
 npm run dev
@@ -71,13 +71,17 @@ npm audit
 
 ## Exit Criteria
 
-All mandatory commands pass.
+All mandatory validation checks pass.
 
-The client can:
+The client must be verified to:
 
 * load a PlayCanvas scene;
 * render successfully;
-* run without console errors.
+* run without project-attributable console errors.
+
+Browser rendering verification is required before Phase 1 is considered fully complete.
+
+If automated tooling cannot perform this verification, it must be completed manually before the phase is closed.
 
 Additionally:
 
@@ -458,34 +462,49 @@ These are not committed roadmap items.
 
 ---
 
-# Development Workflow
+## Development Workflow**
 
 Each change should follow:
 
-```text
 Issue
+
 ↓
+
 Feature branch
+
 ↓
+
 Implementation
+
 ↓
+
 Tests
+
 ↓
+
 Pull Request
+
 ↓
+
 CI
+
 ↓
+
 Code review
+
 ↓
+
 Acceptance / runtime validation
+
 ↓
+
 Gameplay validation when applicable
+
 ↓
+
 Merge
-```
 
 ---
-
 # Definition of Done
 
 A development task is Done only when:
