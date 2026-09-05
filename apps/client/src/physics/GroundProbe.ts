@@ -6,6 +6,7 @@ import {
 } from "playcanvas";
 
 import type { MovementConfig } from "../game/player/movementConfig";
+import { getGroundProbeEndHeight } from "../game/player/stanceMath";
 
 export class GroundProbe {
   private readonly rayStart = new Vec3();
@@ -34,8 +35,11 @@ export class GroundProbe {
 
     this.rayStart.copy(this.player.getPosition());
     this.rayEnd.copy(this.rayStart);
-    this.rayEnd.y -=
-      this.collision.height / 2 + this.config.groundProbeDistance;
+    this.rayEnd.y = getGroundProbeEndHeight(
+      this.rayStart.y,
+      this.collision.height,
+      this.config.groundProbeDistance,
+    );
 
     const hits = this.rigidBodySystem.raycastAll(
       this.rayStart,

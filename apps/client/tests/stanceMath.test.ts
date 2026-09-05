@@ -4,6 +4,7 @@ import { movementConfig } from "../src/game/player/movementConfig";
 import {
   getCapsuleCenterHeightDelta,
   getCountertranslatedCameraHeight,
+  getGroundProbeEndHeight,
   isPhysicalCrouchRequired,
   moveTowards,
 } from "../src/game/player/stanceMath";
@@ -55,6 +56,36 @@ describe("stance geometry", () => {
       10,
     );
   });
+
+  it("keeps standing grounded geometry within probe reach", () => {
+    const standingCenter = movementConfig.playerHeight / 2;
+
+    expect(
+      getGroundProbeEndHeight(
+        standingCenter,
+        movementConfig.playerHeight,
+        movementConfig.groundProbeDistance,
+      ),
+    ).toBeCloseTo(-movementConfig.groundProbeDistance, 10);
+  });
+
+  it("keeps crouched grounded geometry within probe reach", () => {
+    const standingCenter = movementConfig.playerHeight / 2;
+    const crouchedCenter =
+      standingCenter +
+      getCapsuleCenterHeightDelta(
+        movementConfig.playerHeight,
+        movementConfig.crouchHeight,
+      );
+
+    expect(
+      getGroundProbeEndHeight(
+        crouchedCenter,
+        movementConfig.crouchHeight,
+        movementConfig.groundProbeDistance,
+      ),
+    ).toBeCloseTo(-movementConfig.groundProbeDistance, 10);
+  });
 });
 
 describe("physical crouch decision", () => {
@@ -65,6 +96,7 @@ describe("physical crouch decision", () => {
       physicallyCrouched: true,
       crouchHeld: true,
       standClear: true,
+      acceptedCrouchJump: false,
       expected: true,
     },
     {
@@ -73,6 +105,7 @@ describe("physical crouch decision", () => {
       physicallyCrouched: true,
       crouchHeld: true,
       standClear: false,
+      acceptedCrouchJump: false,
       expected: true,
     },
     {
@@ -81,6 +114,7 @@ describe("physical crouch decision", () => {
       physicallyCrouched: true,
       crouchHeld: false,
       standClear: false,
+      acceptedCrouchJump: false,
       expected: true,
     },
     {
@@ -89,6 +123,7 @@ describe("physical crouch decision", () => {
       physicallyCrouched: true,
       crouchHeld: false,
       standClear: true,
+      acceptedCrouchJump: false,
       expected: false,
     },
     {
@@ -97,7 +132,35 @@ describe("physical crouch decision", () => {
       physicallyCrouched: false,
       crouchHeld: true,
       standClear: true,
+      acceptedCrouchJump: false,
       expected: false,
+    },
+    {
+      name: "expands after an accepted crouch jump while Ctrl remains held",
+      movementStateCrouched: false,
+      physicallyCrouched: true,
+      crouchHeld: true,
+      standClear: true,
+      acceptedCrouchJump: true,
+      expected: false,
+    },
+    {
+      name: "expands after an accepted crouch jump with Ctrl released",
+      movementStateCrouched: false,
+      physicallyCrouched: true,
+      crouchHeld: false,
+      standClear: true,
+      acceptedCrouchJump: true,
+      expected: false,
+    },
+    {
+      name: "keeps crouch after a blocked crouch jump",
+      movementStateCrouched: true,
+      physicallyCrouched: true,
+      crouchHeld: true,
+      standClear: false,
+      acceptedCrouchJump: false,
+      expected: true,
     },
   ])("$name", ({ expected, ...input }) => {
     expect(
@@ -106,6 +169,7 @@ describe("physical crouch decision", () => {
         input.physicallyCrouched,
         input.crouchHeld,
         input.standClear,
+        input.acceptedCrouchJump,
       ),
     ).toBe(expected);
   });

@@ -86,8 +86,8 @@ export class PlayerStanceController {
       cameraPosition.z,
     );
 
-    this.collision.height = nextHeight;
     this.rigidBody.teleport(this.nextPosition);
+    this.collision.height = nextHeight;
     this.rigidBody.linearVelocity = this.preservedLinearVelocity;
     this.rigidBody.angularVelocity = this.preservedAngularVelocity;
     this.rigidBody.activate();

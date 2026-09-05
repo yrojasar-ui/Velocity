@@ -88,7 +88,10 @@ export class CharacterMotor {
       this.nextVelocity.z = this.nextHorizontalVelocity.z;
     }
 
-    if (input.jumpPressed && this.movementState.tryStartJump(standClear)) {
+    const crouchedAtJumpStart = this.stance.isCrouched;
+    const jumpStartedThisFrame =
+      input.jumpPressed && this.movementState.tryStartJump(standClear);
+    if (jumpStartedThisFrame) {
       // A direct vertical launch speed keeps the jump predictable while physics owns gravity.
       this.nextVelocity.y = this.config.jumpVelocity;
     }
@@ -98,6 +101,7 @@ export class CharacterMotor {
       this.stance.isCrouched,
       input.crouchHeld,
       standClear,
+      jumpStartedThisFrame && crouchedAtJumpStart,
     );
     this.stance.update(crouchRequired, standClear, frameDeltaSeconds);
 
