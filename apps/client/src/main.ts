@@ -28,7 +28,7 @@ import { PlayerInput } from "./game/player/PlayerInput";
 import { PlayerLook } from "./game/player/PlayerLook";
 import { createPlayerRig } from "./game/player/createPlayerRig";
 import { movementConfig } from "./game/player/movementConfig";
-import { createMovementLab } from "./game/world/MovementLab";
+import { createMovementLab } from "./game/world/movementLab/MovementLab";
 import { GroundProbe } from "./physics/GroundProbe";
 import { initializePhysics } from "./physics/initializePhysics";
 import "./styles.css";
