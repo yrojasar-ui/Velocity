@@ -66,6 +66,7 @@ npm run typecheck
 npm run test
 npm run format
 npm run format:check
+npm audit
 ```
 
 ## Exit Criteria
@@ -77,6 +78,11 @@ The client can:
 * load a PlayCanvas scene;
 * render successfully;
 * run without console errors.
+
+Additionally:
+
+* dependency audit results have been reviewed;
+* no gameplay feature from M0 or later has been implemented.
 
 ---
 
@@ -471,7 +477,9 @@ CI
 ↓
 Code review
 ↓
-Gameplay validation
+Acceptance / runtime validation
+↓
+Gameplay validation when applicable
 ↓
 Merge
 ```
