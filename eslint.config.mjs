@@ -14,11 +14,16 @@ export default tseslint.config(
   {
     files: ["apps/**/*.ts", "packages/**/*.ts"],
     languageOptions: {
-      globals: globals.browser,
       parserOptions: {
         projectService: true,
         tsconfigRootDir: import.meta.dirname,
       },
+    },
+  },
+  {
+    files: ["apps/client/**/*.ts"],
+    languageOptions: {
+      globals: globals.browser,
     },
   },
 );
