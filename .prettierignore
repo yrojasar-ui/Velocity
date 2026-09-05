@@ -1,0 +1,8 @@
+# Phase 0 source-of-truth documents are intentionally protected from bulk formatting.
+docs/
+
+# Generated and third-party content.
+node_modules/
+**/dist/
+coverage/
+package-lock.json
