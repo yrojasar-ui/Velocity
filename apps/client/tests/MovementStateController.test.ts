@@ -4,12 +4,29 @@ import { MovementState } from "../src/game/player/MovementState";
 import { MovementStateController } from "../src/game/player/MovementStateController";
 
 describe("MovementStateController", () => {
+  it("starts Airborne and not grounded", () => {
+    const movementState = new MovementStateController();
+
+    expect(movementState.current).toBe(MovementState.Airborne);
+    expect(movementState.isGrounded).toBe(false);
+  });
+
+  it("remains Airborne when ground is still invalid", () => {
+    const movementState = new MovementStateController();
+
+    movementState.updateGroundValidity(false);
+
+    expect(movementState.current).toBe(MovementState.Airborne);
+    expect(movementState.isGrounded).toBe(false);
+  });
+
   it("enters Grounded when valid ground is observed", () => {
     const movementState = new MovementStateController();
 
     movementState.updateGroundValidity(true);
 
     expect(movementState.current).toBe(MovementState.Grounded);
+    expect(movementState.isGrounded).toBe(true);
   });
 
   it("transitions from Grounded to Airborne when ground is lost", () => {
@@ -18,6 +35,7 @@ describe("MovementStateController", () => {
     movementState.updateGroundValidity(false);
 
     expect(movementState.current).toBe(MovementState.Airborne);
+    expect(movementState.isGrounded).toBe(false);
   });
 
   it("transitions from Airborne to Grounded on landing", () => {
@@ -27,6 +45,7 @@ describe("MovementStateController", () => {
     movementState.updateGroundValidity(true);
 
     expect(movementState.current).toBe(MovementState.Grounded);
+    expect(movementState.isGrounded).toBe(true);
   });
 
   it("transitions to Airborne immediately when a grounded jump starts", () => {
@@ -36,6 +55,7 @@ describe("MovementStateController", () => {
 
     expect(jumpStarted).toBe(true);
     expect(movementState.current).toBe(MovementState.Airborne);
+    expect(movementState.isGrounded).toBe(false);
   });
 
   it("rejects an airborne jump without changing state", () => {
@@ -46,6 +66,7 @@ describe("MovementStateController", () => {
 
     expect(secondJumpStarted).toBe(false);
     expect(movementState.current).toBe(MovementState.Airborne);
+    expect(movementState.isGrounded).toBe(false);
   });
 
   it("remains stable across repeated grounded updates", () => {
@@ -56,6 +77,7 @@ describe("MovementStateController", () => {
     movementState.updateGroundValidity(true);
 
     expect(movementState.current).toBe(MovementState.Grounded);
+    expect(movementState.isGrounded).toBe(true);
   });
 });
 

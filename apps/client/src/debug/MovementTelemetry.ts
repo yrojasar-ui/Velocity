@@ -1,7 +1,6 @@
 import type { Entity, RigidBodyComponent } from "playcanvas";
 
 import type { PointerLock } from "../core/input/PointerLock";
-import { MovementState } from "../game/player/MovementState";
 import type { MovementStateController } from "../game/player/MovementStateController";
 import type { PlayerLook } from "../game/player/PlayerLook";
 
@@ -35,7 +34,7 @@ export class MovementTelemetry {
       (this.elapsedSeconds / this.elapsedFrames) * 1000;
     const horizontalSpeed = Math.hypot(velocity.x, velocity.z);
     const currentMovementState = this.movementState.current;
-    const grounded = currentMovementState === MovementState.Grounded;
+    const grounded = this.movementState.isGrounded;
 
     this.element.textContent = [
       `FPS: ${fps.toFixed(0)}`,

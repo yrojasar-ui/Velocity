@@ -1,7 +1,6 @@
 import { math, Vec3, type RigidBodyComponent } from "playcanvas";
 
 import type { GroundProbe } from "../../physics/GroundProbe";
-import { MovementState } from "./MovementState";
 import type { MovementStateController } from "./MovementStateController";
 import type { PlayerInputState } from "./PlayerInput";
 import type { MovementConfig } from "./movementConfig";
@@ -33,7 +32,7 @@ export class CharacterMotor {
     );
     this.nextVelocity.copy(currentVelocity);
 
-    if (this.movementState.current === MovementState.Grounded) {
+    if (this.movementState.isGrounded) {
       this.currentHorizontalVelocity.x = currentVelocity.x;
       this.currentHorizontalVelocity.z = currentVelocity.z;
       this.movementInput.x = input.moveX;
