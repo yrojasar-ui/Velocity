@@ -14,6 +14,7 @@ import {
   getGroundTargetSpeed,
   type HorizontalVector,
 } from "./movementMath";
+import { isPhysicalCrouchRequired } from "./stanceMath";
 
 const DEGREES_TO_RADIANS = Math.PI / 180;
 
@@ -52,8 +53,7 @@ export class CharacterMotor {
     const shouldCheckStandClearance =
       this.stance.isCrouched &&
       (!input.crouchHeld ||
-        input.jumpPressed ||
-        !this.movementState.isGrounded);
+        (input.jumpPressed && this.movementState.isGrounded));
     const standClear =
       !this.stance.isCrouched ||
       (shouldCheckStandClearance && this.standClearanceProbe.canStand());
@@ -93,9 +93,12 @@ export class CharacterMotor {
       this.nextVelocity.y = this.config.jumpVelocity;
     }
 
-    const crouchRequired =
-      this.movementState.isCrouched ||
-      (this.stance.isCrouched && !this.movementState.isGrounded && !standClear);
+    const crouchRequired = isPhysicalCrouchRequired(
+      this.movementState.isCrouched,
+      this.stance.isCrouched,
+      input.crouchHeld,
+      standClear,
+    );
     this.stance.update(crouchRequired, standClear, frameDeltaSeconds);
 
     this.rigidBody.linearVelocity = this.nextVelocity;

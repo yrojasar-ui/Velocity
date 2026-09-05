@@ -12,6 +12,17 @@ export function getCountertranslatedCameraHeight(
   return currentCameraHeight - capsuleCenterHeightDelta;
 }
 
+export function isPhysicalCrouchRequired(
+  movementStateCrouched: boolean,
+  physicallyCrouched: boolean,
+  crouchHeld: boolean,
+  standClear: boolean,
+): boolean {
+  return (
+    movementStateCrouched || (physicallyCrouched && (crouchHeld || !standClear))
+  );
+}
+
 export function moveTowards(
   current: number,
   target: number,

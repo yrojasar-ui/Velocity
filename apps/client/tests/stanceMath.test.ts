@@ -4,6 +4,7 @@ import { movementConfig } from "../src/game/player/movementConfig";
 import {
   getCapsuleCenterHeightDelta,
   getCountertranslatedCameraHeight,
+  isPhysicalCrouchRequired,
   moveTowards,
 } from "../src/game/player/stanceMath";
 
@@ -53,6 +54,60 @@ describe("stance geometry", () => {
       standingCenter + movementConfig.cameraEyeHeight,
       10,
     );
+  });
+});
+
+describe("physical crouch decision", () => {
+  it.each([
+    {
+      name: "preserves an airborne physical crouch while Ctrl is held in clear space",
+      movementStateCrouched: false,
+      physicallyCrouched: true,
+      crouchHeld: true,
+      standClear: true,
+      expected: true,
+    },
+    {
+      name: "preserves an airborne physical crouch while Ctrl is held under blocked geometry",
+      movementStateCrouched: false,
+      physicallyCrouched: true,
+      crouchHeld: true,
+      standClear: false,
+      expected: true,
+    },
+    {
+      name: "preserves a released physical crouch while standing is blocked",
+      movementStateCrouched: false,
+      physicallyCrouched: true,
+      crouchHeld: false,
+      standClear: false,
+      expected: true,
+    },
+    {
+      name: "allows a released physical crouch to stand in clear space",
+      movementStateCrouched: false,
+      physicallyCrouched: true,
+      crouchHeld: false,
+      standClear: true,
+      expected: false,
+    },
+    {
+      name: "does not initiate physical crouch from standing while airborne",
+      movementStateCrouched: false,
+      physicallyCrouched: false,
+      crouchHeld: true,
+      standClear: true,
+      expected: false,
+    },
+  ])("$name", ({ expected, ...input }) => {
+    expect(
+      isPhysicalCrouchRequired(
+        input.movementStateCrouched,
+        input.physicallyCrouched,
+        input.crouchHeld,
+        input.standClear,
+      ),
+    ).toBe(expected);
   });
 });
 
