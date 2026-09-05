@@ -11,6 +11,15 @@
   </head>
   <body>
     <canvas id="application" aria-label="Velocity rendering canvas"></canvas>
+    <section id="control-panel" aria-label="Game controls">
+      <button id="enter-controls" type="button">Click to play</button>
+      <p id="control-status" aria-live="polite">
+        Pointer Lock is required for movement and mouse look.
+      </p>
+      <p>WASD to move · Space to jump · Escape to release the pointer</p>
+    </section>
+    <pre id="movement-telemetry" aria-label="Movement telemetry"></pre>
+    <p id="initialization-error" role="alert" hidden></p>
     <noscript
       >Velocity requires JavaScript to initialize the rendering
       engine.</noscript

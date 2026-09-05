@@ -1,6 +1,6 @@
 # Velocity
 
-Velocity is a browser-first competitive movement FPS. The repository is currently in Phase 1: Foundation, which establishes a reproducible engineering toolchain and a minimal PlayCanvas rendering bootstrap. Gameplay begins in later milestones and is intentionally absent here.
+Velocity is a browser-first competitive movement FPS. The repository is currently at Milestone M0: WALK, which provides the technically correct base FPS controller and graybox Movement Lab for human gameplay evaluation.
 
 ## Prerequisites
 
@@ -24,6 +24,13 @@ npm run dev
 
 Vite prints the client URL when it is ready. The server binds to `127.0.0.1` by default; remote exposure must be explicitly requested by the developer.
 
+### Controls
+
+- Click **Click to play** to enter Pointer Lock.
+- Use **WASD** to move.
+- Press **Space** to jump.
+- Press **Escape** to release Pointer Lock.
+
 ## Validation
 
 ```text
@@ -41,7 +48,7 @@ Use `npm run format` to format supported active project files. Phase 0 source-of
 
 ```text
 apps/
-  client/       Minimal TypeScript, Vite, and PlayCanvas client
+  client/       TypeScript, Vite, PlayCanvas, and M0 Movement Lab client
 docs/           Project source-of-truth documents
 .github/        Continuous integration workflow
 ```

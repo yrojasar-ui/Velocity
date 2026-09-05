@@ -16,3 +16,65 @@ body,
 #application {
   display: block;
 }
+
+#control-panel {
+  position: fixed;
+  inset: 0;
+  display: grid;
+  place-content: center;
+  justify-items: center;
+  padding: 2rem;
+  color: #f5f7fa;
+  text-align: center;
+  background: rgb(5 10 16 / 72%);
+}
+
+#control-panel[hidden] {
+  display: none;
+}
+
+#enter-controls {
+  padding: 0.8rem 1.4rem;
+  color: #08111c;
+  font: inherit;
+  font-weight: 700;
+  cursor: pointer;
+  background: #c7e4ff;
+  border: 0;
+  border-radius: 0.3rem;
+}
+
+#enter-controls:disabled {
+  cursor: wait;
+  opacity: 0.7;
+}
+
+#control-status {
+  margin-bottom: 0;
+}
+
+#movement-telemetry {
+  position: fixed;
+  top: 1rem;
+  left: 1rem;
+  min-width: 18rem;
+  margin: 0;
+  padding: 0.75rem;
+  color: #e8f2ff;
+  font:
+    0.8rem/1.45 ui-monospace,
+    monospace;
+  pointer-events: none;
+  background: rgb(5 10 16 / 78%);
+  border: 1px solid rgb(199 228 255 / 22%);
+  border-radius: 0.25rem;
+}
+
+#initialization-error {
+  position: fixed;
+  inset: 1rem;
+  margin: 0;
+  padding: 1rem;
+  color: #ffe9e9;
+  background: #5b1515;
+}
