@@ -1,6 +1,8 @@
 import { math, Vec3, type RigidBodyComponent } from "playcanvas";
 
 import type { GroundProbe } from "../../physics/GroundProbe";
+import { MovementState } from "./MovementState";
+import type { MovementStateController } from "./MovementStateController";
 import type { PlayerInputState } from "./PlayerInput";
 import type { MovementConfig } from "./movementConfig";
 import { calculateGroundVelocity, type HorizontalVector } from "./movementMath";
@@ -12,17 +14,13 @@ export class CharacterMotor {
   private readonly movementInput: HorizontalVector = { x: 0, z: 0 };
   private readonly nextHorizontalVelocity: HorizontalVector = { x: 0, z: 0 };
   private readonly nextVelocity = new Vec3();
-  private groundedState = false;
 
   public constructor(
     private readonly rigidBody: RigidBodyComponent,
     private readonly groundProbe: GroundProbe,
+    private readonly movementState: MovementStateController,
     private readonly config: Readonly<MovementConfig>,
   ) {}
-
-  public get grounded(): boolean {
-    return this.groundedState;
-  }
 
   public update(
     input: Readonly<PlayerInputState>,
@@ -30,10 +28,12 @@ export class CharacterMotor {
     deltaTime: number,
   ): void {
     const currentVelocity = this.rigidBody.linearVelocity;
-    this.groundedState = this.groundProbe.isGrounded(currentVelocity.y);
+    this.movementState.updateGroundValidity(
+      this.groundProbe.isGrounded(currentVelocity.y),
+    );
     this.nextVelocity.copy(currentVelocity);
 
-    if (this.groundedState) {
+    if (this.movementState.current === MovementState.Grounded) {
       this.currentHorizontalVelocity.x = currentVelocity.x;
       this.currentHorizontalVelocity.z = currentVelocity.z;
       this.movementInput.x = input.moveX;
@@ -54,10 +54,9 @@ export class CharacterMotor {
       this.nextVelocity.z = this.nextHorizontalVelocity.z;
     }
 
-    if (input.jumpPressed && this.groundedState) {
+    if (input.jumpPressed && this.movementState.tryStartJump()) {
       // A direct vertical launch speed keeps the jump predictable while physics owns gravity.
       this.nextVelocity.y = this.config.jumpVelocity;
-      this.groundedState = false;
     }
 
     this.rigidBody.linearVelocity = this.nextVelocity;

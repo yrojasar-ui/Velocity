@@ -24,6 +24,7 @@ import { PointerLock } from "./core/input/PointerLock";
 import { MovementLabControls } from "./debug/MovementLabControls";
 import { MovementTelemetry } from "./debug/MovementTelemetry";
 import { CharacterMotor } from "./game/player/CharacterMotor";
+import { MovementStateController } from "./game/player/MovementStateController";
 import { PlayerInput } from "./game/player/PlayerInput";
 import { PlayerLook } from "./game/player/PlayerLook";
 import { createPlayerRig } from "./game/player/createPlayerRig";
@@ -131,9 +132,11 @@ async function startClient(): Promise<ClientRuntime> {
     player.root,
     movementConfig,
   );
+  const movementState = new MovementStateController();
   const characterMotor = new CharacterMotor(
     player.rigidBody,
     groundProbe,
+    movementState,
     movementConfig,
   );
   const pointerLock = new PointerLock(
@@ -147,7 +150,7 @@ async function startClient(): Promise<ClientRuntime> {
     telemetryElement,
     player.root,
     player.rigidBody,
-    characterMotor,
+    movementState,
     playerLook,
     pointerLock,
   );
