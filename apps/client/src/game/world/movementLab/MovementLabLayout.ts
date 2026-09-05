@@ -20,6 +20,14 @@ const DISTANCE_LANE_MARKERS_METERS = [1, 2, 3, 5, 10, 15, 20] as const;
 const VERTICAL_TEST_HEIGHTS_METERS = [0.5, 0.75, 1, 1.25, 1.5] as const;
 const HORIZONTAL_TEST_MARKERS_METERS = [1, 2, 3, 4, 5] as const;
 
+const CROUCH_TEST_X = 7;
+const CROUCH_TEST_CENTER_Z = -10;
+const CROUCH_TEST_LENGTH_METERS = 5;
+const CROUCH_TEST_WIDTH_METERS = 4;
+const CROUCH_TEST_CLEARANCE_METERS = 1.45;
+const CROUCH_TEST_CEILING_THICKNESS_METERS = 0.4;
+const CROUCH_TEST_SUPPORT_THICKNESS_METERS = 0.2;
+
 export function createMovementLabLayout(
   lab: Entity,
   materials: MovementLabMaterials,
@@ -37,7 +45,52 @@ export function createMovementLabLayout(
   createDistanceLane(lab, materials);
   createVerticalJumpTest(lab, materials);
   createHorizontalJumpTest(lab, materials);
+  createCrouchTest(lab, materials);
   createParkourLine(lab, materials);
+}
+
+function createCrouchTest(lab: Entity, materials: MovementLabMaterials): void {
+  const ceilingCenterY =
+    CROUCH_TEST_CLEARANCE_METERS + CROUCH_TEST_CEILING_THICKNESS_METERS / 2;
+  const supportOffsetX =
+    (CROUCH_TEST_WIDTH_METERS - CROUCH_TEST_SUPPORT_THICKNESS_METERS) / 2;
+
+  createGroundLabel(
+    lab,
+    "CROUCH TEST",
+    [CROUCH_TEST_X, 0.04, CROUCH_TEST_CENTER_Z + 3.6],
+    [3.2, 1, 0.7],
+    materials.getLabel("CROUCH TEST"),
+  );
+  createStaticBox(
+    lab,
+    "Crouch Test Ceiling",
+    [CROUCH_TEST_X, ceilingCenterY, CROUCH_TEST_CENTER_Z],
+    [
+      CROUCH_TEST_WIDTH_METERS,
+      CROUCH_TEST_CEILING_THICKNESS_METERS,
+      CROUCH_TEST_LENGTH_METERS,
+    ],
+    materials.wall,
+  );
+
+  for (const side of [-1, 1]) {
+    createStaticBox(
+      lab,
+      `Crouch Test ${side < 0 ? "West" : "East"} Support`,
+      [
+        CROUCH_TEST_X + side * supportOffsetX,
+        CROUCH_TEST_CLEARANCE_METERS / 2,
+        CROUCH_TEST_CENTER_Z,
+      ],
+      [
+        CROUCH_TEST_SUPPORT_THICKNESS_METERS,
+        CROUCH_TEST_CLEARANCE_METERS,
+        CROUCH_TEST_LENGTH_METERS,
+      ],
+      materials.wall,
+    );
+  }
 }
 
 function createBoundaryWalls(

@@ -1,6 +1,25 @@
+import { MovementState } from "./MovementState";
+import type { MovementConfig } from "./movementConfig";
+
 export interface HorizontalVector {
   x: number;
   z: number;
+}
+
+export function getGroundTargetSpeed(
+  movementState: MovementState,
+  config: Readonly<MovementConfig>,
+): number {
+  switch (movementState) {
+    case MovementState.Grounded:
+      return config.walkSpeed;
+    case MovementState.Sprint:
+      return config.sprintSpeed;
+    case MovementState.Crouch:
+      return config.walkSpeed * config.crouchSpeedMultiplier;
+    case MovementState.Airborne:
+      throw new Error("Airborne movement has no ground target speed.");
+  }
 }
 
 const MINIMUM_VECTOR_LENGTH = 1e-8;
@@ -50,14 +69,6 @@ export function calculateGroundVelocity(
     const changeScale = maximumChange / changeLength;
     output.x = currentVelocity.x + changeX * changeScale;
     output.z = currentVelocity.z + changeZ * changeScale;
-  }
-
-  const outputSpeed = Math.hypot(output.x, output.z);
-
-  if (outputSpeed > maximumSpeed && outputSpeed > MINIMUM_VECTOR_LENGTH) {
-    const speedScale = maximumSpeed / outputSpeed;
-    output.x *= speedScale;
-    output.z *= speedScale;
   }
 
   return output;

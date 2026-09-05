@@ -3,6 +3,7 @@ import type { Entity, RigidBodyComponent } from "playcanvas";
 import type { PointerLock } from "../core/input/PointerLock";
 import type { MovementStateController } from "../game/player/MovementStateController";
 import type { PlayerLook } from "../game/player/PlayerLook";
+import type { PlayerStanceController } from "../game/player/PlayerStanceController";
 
 const REFRESH_INTERVAL_SECONDS = 0.1;
 
@@ -15,6 +16,7 @@ export class MovementTelemetry {
     private readonly player: Entity,
     private readonly rigidBody: RigidBodyComponent,
     private readonly movementState: MovementStateController,
+    private readonly stance: PlayerStanceController,
     private readonly look: PlayerLook,
     private readonly pointerLock: PointerLock,
   ) {}
@@ -45,12 +47,20 @@ export class MovementTelemetry {
       `Vertical speed: ${velocity.y.toFixed(2)} m/s`,
       `Movement state: ${currentMovementState}`,
       `Grounded: ${grounded ? "yes" : "no"}`,
+      `Physical stance: ${this.stance.isCrouched ? "crouched" : "standing"}`,
+      `Collider height: ${this.stance.height.toFixed(2)} m`,
+      `Camera height: ${this.stance.cameraHeight.toFixed(2)} m local`,
       `Pointer Lock: ${this.pointerLock.mode}`,
       `Look: yaw ${this.look.yaw.toFixed(1)}°, pitch ${this.look.pitch.toFixed(1)}°`,
     ].join("\n");
 
     this.element.dataset.movementState = currentMovementState;
     this.element.dataset.grounded = String(grounded);
+    this.element.dataset.physicalStance = this.stance.isCrouched
+      ? "crouched"
+      : "standing";
+    this.element.dataset.colliderHeight = this.stance.height.toFixed(2);
+    this.element.dataset.cameraHeight = this.stance.cameraHeight.toFixed(2);
     this.element.dataset.pointerLock = this.pointerLock.mode;
     this.elapsedSeconds = 0;
     this.elapsedFrames = 0;

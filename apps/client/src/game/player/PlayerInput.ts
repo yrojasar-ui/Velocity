@@ -1,7 +1,9 @@
 import {
   KEY_A,
+  KEY_CONTROL,
   KEY_D,
   KEY_S,
+  KEY_SHIFT,
   KEY_SPACE,
   KEY_W,
   Keyboard,
@@ -16,6 +18,8 @@ export interface PlayerInputState {
   moveX: number;
   moveZ: number;
   jumpPressed: boolean;
+  sprintHeld: boolean;
+  crouchHeld: boolean;
   pointerLocked: boolean;
   lookDeltaX: number;
   lookDeltaY: number;
@@ -27,6 +31,8 @@ export class PlayerInput {
     moveX: 0,
     moveZ: 0,
     jumpPressed: false,
+    sprintHeld: false,
+    crouchHeld: false,
     pointerLocked: false,
     lookDeltaX: 0,
     lookDeltaY: 0,
@@ -85,6 +91,8 @@ export class PlayerInput {
     this.state.moveX = this.normalizedMovement.x;
     this.state.moveZ = this.normalizedMovement.z;
     this.state.jumpPressed = this.keyboard.wasPressed(KEY_SPACE);
+    this.state.sprintHeld = this.keyboard.isPressed(KEY_SHIFT);
+    this.state.crouchHeld = this.keyboard.isPressed(KEY_CONTROL);
     this.state.lookDeltaX = this.accumulatedLookX;
     this.state.lookDeltaY = this.accumulatedLookY;
     this.accumulatedLookX = 0;
@@ -113,7 +121,9 @@ export class PlayerInput {
       this.keyboard.isPressed(KEY_A) ||
       this.keyboard.isPressed(KEY_S) ||
       this.keyboard.isPressed(KEY_D) ||
-      this.keyboard.isPressed(KEY_SPACE)
+      this.keyboard.isPressed(KEY_SPACE) ||
+      this.keyboard.isPressed(KEY_SHIFT) ||
+      this.keyboard.isPressed(KEY_CONTROL)
     );
   }
 
@@ -121,6 +131,8 @@ export class PlayerInput {
     this.state.moveX = 0;
     this.state.moveZ = 0;
     this.state.jumpPressed = false;
+    this.state.sprintHeld = false;
+    this.state.crouchHeld = false;
     this.state.lookDeltaX = 0;
     this.state.lookDeltaY = 0;
   }

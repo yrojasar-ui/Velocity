@@ -3,6 +3,7 @@ import {
   Color,
   Entity,
   Vec3,
+  type CollisionComponent,
   type RigidBodyComponent,
 } from "playcanvas";
 
@@ -13,6 +14,7 @@ export interface PlayerRig {
   readonly yawPivot: Entity;
   readonly pitchPivot: Entity;
   readonly camera: Entity;
+  readonly collision: CollisionComponent;
   readonly rigidBody: RigidBodyComponent;
 }
 
@@ -40,9 +42,10 @@ export function createPlayerRig(
     restitution: config.playerRestitution,
   });
 
+  const collision = root.collision;
   const rigidBody = root.rigidbody;
-  if (rigidBody === undefined) {
-    throw new Error("Player rigid body component failed to initialize.");
+  if (collision === undefined || rigidBody === undefined) {
+    throw new Error("Player physics components failed to initialize.");
   }
 
   const yawPivot = new Entity("Yaw Pivot");
@@ -66,6 +69,7 @@ export function createPlayerRig(
     yawPivot,
     pitchPivot,
     camera,
+    collision,
     rigidBody,
   };
 }

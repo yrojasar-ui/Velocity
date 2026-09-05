@@ -8,6 +8,7 @@ export class MovementLabControls {
     private readonly telemetryElement: HTMLElement,
     private readonly rigidBody: RigidBodyComponent,
     spawnPosition: Readonly<Vec3>,
+    private readonly preparePlayerReset: () => void,
   ) {
     this.spawnPosition.set(spawnPosition.x, spawnPosition.y, spawnPosition.z);
     window.addEventListener("keydown", this.handleKeyDown);
@@ -18,7 +19,7 @@ export class MovementLabControls {
   }
 
   private readonly handleKeyDown = (event: KeyboardEvent): void => {
-    if (event.repeat || event.ctrlKey || event.metaKey || event.altKey) {
+    if (event.repeat || event.metaKey || event.altKey) {
       return;
     }
 
@@ -30,6 +31,7 @@ export class MovementLabControls {
 
     if (event.code === "KeyR") {
       event.preventDefault();
+      this.preparePlayerReset();
       this.rigidBody.teleport(this.spawnPosition);
       this.rigidBody.linearVelocity = this.zeroVelocity;
       this.rigidBody.angularVelocity = this.zeroVelocity;
