@@ -153,7 +153,11 @@ async function startClient(): Promise<ClientRuntime> {
     characterMotor.update(input, playerLook.yaw, deltaTime);
     telemetry.update(deltaTime);
   });
+  const handleResize = (): void => {
+    application.resizeCanvas();
+  };
 
+  window.addEventListener("resize", handleResize);
   application.start();
   canvas.dataset.renderer = application.graphicsDevice.isWebGL2
     ? "webgl2"
@@ -170,6 +174,7 @@ async function startClient(): Promise<ClientRuntime> {
       }
 
       destroyed = true;
+      window.removeEventListener("resize", handleResize);
       updateSubscription.off();
       pointerLock.destroy();
       playerInput.destroy();
