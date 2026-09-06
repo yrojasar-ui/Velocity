@@ -1,4 +1,5 @@
 import {
+  KEY_C,
   KEY_CONTROL,
   KEY_SHIFT,
   type EventHandle,
@@ -13,7 +14,7 @@ describe("PlayerInput stance modifiers", () => {
   it("requires held Sprint/Crouch keys to be released after controls activate", () => {
     const harness = createInputHarness();
     harness.pressedKeys.add(KEY_SHIFT);
-    harness.pressedKeys.add(KEY_CONTROL);
+    harness.pressedKeys.add(KEY_C);
     harness.input.setControlActive(true);
 
     expect(harness.input.read().sprintHeld).toBe(false);
@@ -23,8 +24,8 @@ describe("PlayerInput stance modifiers", () => {
     harness.pressedKeys.clear();
     harness.input.read();
     harness.pressedKeys.add(KEY_SHIFT);
-    harness.pressedKeys.add(KEY_CONTROL);
-    harness.pressedThisFrame.add(KEY_CONTROL);
+    harness.pressedKeys.add(KEY_C);
+    harness.pressedThisFrame.add(KEY_C);
 
     expect(harness.input.read().sprintHeld).toBe(true);
     expect(harness.input.read().crouchHeld).toBe(true);
@@ -37,7 +38,7 @@ describe("PlayerInput stance modifiers", () => {
     harness.input.setControlActive(true);
     harness.input.read();
     harness.pressedKeys.add(KEY_SHIFT);
-    harness.pressedKeys.add(KEY_CONTROL);
+    harness.pressedKeys.add(KEY_C);
 
     expect(harness.input.read().sprintHeld).toBe(true);
     expect(harness.input.read().crouchHeld).toBe(true);
@@ -50,12 +51,12 @@ describe("PlayerInput stance modifiers", () => {
     harness.input.destroy();
   });
 
-  it("reports crouchPressed only on the Ctrl press edge", () => {
+  it("reports crouchPressed only on the C press edge", () => {
     const harness = createInputHarness();
     harness.input.setControlActive(true);
     harness.input.read();
-    harness.pressedKeys.add(KEY_CONTROL);
-    harness.pressedThisFrame.add(KEY_CONTROL);
+    harness.pressedKeys.add(KEY_C);
+    harness.pressedThisFrame.add(KEY_C);
 
     expect(harness.input.read()).toMatchObject({
       crouchHeld: true,
@@ -68,15 +69,22 @@ describe("PlayerInput stance modifiers", () => {
       crouchHeld: true,
       crouchPressed: false,
     });
+
+    harness.pressedKeys.clear();
+
+    expect(harness.input.read()).toMatchObject({
+      crouchHeld: false,
+      crouchPressed: false,
+    });
     harness.input.destroy();
   });
 
-  it("does not synthesize crouchPressed when controls reactivate with Ctrl held", () => {
+  it("does not synthesize crouchPressed when controls reactivate with C held", () => {
     const harness = createInputHarness();
     harness.input.setControlActive(true);
     harness.input.read();
-    harness.pressedKeys.add(KEY_CONTROL);
-    harness.pressedThisFrame.add(KEY_CONTROL);
+    harness.pressedKeys.add(KEY_C);
+    harness.pressedThisFrame.add(KEY_C);
 
     expect(harness.input.read()).toMatchObject({
       crouchHeld: true,
@@ -99,8 +107,29 @@ describe("PlayerInput stance modifiers", () => {
 
     harness.pressedKeys.clear();
     harness.input.read();
+    harness.pressedKeys.add(KEY_C);
+    harness.pressedThisFrame.add(KEY_C);
+
+    expect(harness.input.read()).toMatchObject({
+      crouchHeld: true,
+      crouchPressed: true,
+    });
+    harness.input.destroy();
+  });
+
+  it("does not treat Ctrl as crouch input or a mapped-key release barrier", () => {
+    const harness = createInputHarness();
     harness.pressedKeys.add(KEY_CONTROL);
     harness.pressedThisFrame.add(KEY_CONTROL);
+    harness.input.setControlActive(true);
+
+    expect(harness.input.read()).toMatchObject({
+      crouchHeld: false,
+      crouchPressed: false,
+    });
+
+    harness.pressedKeys.add(KEY_C);
+    harness.pressedThisFrame.add(KEY_C);
 
     expect(harness.input.read()).toMatchObject({
       crouchHeld: true,

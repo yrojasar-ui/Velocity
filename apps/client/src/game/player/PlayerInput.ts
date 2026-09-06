@@ -1,6 +1,6 @@
 import {
   KEY_A,
-  KEY_CONTROL,
+  KEY_C,
   KEY_D,
   KEY_S,
   KEY_SHIFT,
@@ -94,8 +94,8 @@ export class PlayerInput {
     this.state.moveZ = this.normalizedMovement.z;
     this.state.jumpPressed = this.keyboard.wasPressed(KEY_SPACE);
     this.state.sprintHeld = this.keyboard.isPressed(KEY_SHIFT);
-    this.state.crouchHeld = this.keyboard.isPressed(KEY_CONTROL);
-    this.state.crouchPressed = this.keyboard.wasPressed(KEY_CONTROL);
+    this.state.crouchHeld = this.keyboard.isPressed(KEY_C);
+    this.state.crouchPressed = this.keyboard.wasPressed(KEY_C);
     this.state.lookDeltaX = this.accumulatedLookX;
     this.state.lookDeltaY = this.accumulatedLookY;
     this.accumulatedLookX = 0;
@@ -126,7 +126,7 @@ export class PlayerInput {
       this.keyboard.isPressed(KEY_D) ||
       this.keyboard.isPressed(KEY_SPACE) ||
       this.keyboard.isPressed(KEY_SHIFT) ||
-      this.keyboard.isPressed(KEY_CONTROL)
+      this.keyboard.isPressed(KEY_C)
     );
   }
 

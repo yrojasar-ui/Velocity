@@ -19,7 +19,7 @@ export class MovementLabControls {
   }
 
   private readonly handleKeyDown = (event: KeyboardEvent): void => {
-    if (event.repeat || event.metaKey || event.altKey) {
+    if (event.repeat || event.ctrlKey || event.metaKey || event.altKey) {
       return;
     }
 
