@@ -1,11 +1,14 @@
 import { MovementState } from "./MovementState";
 
 export interface GroundedModeIntent {
-  crouchRequested: boolean;
+  crouchHeld: boolean;
+  crouchPressed: boolean;
   standClear: boolean;
   sprintRequested: boolean;
   forwardInput: number;
   minimumSprintForwardInput: number;
+  horizontalSpeed: number;
+  minimumSlideSpeed: number;
 }
 
 export class MovementStateController {
@@ -27,6 +30,14 @@ export class MovementStateController {
     return this.currentState === MovementState.Crouch;
   }
 
+  public get isSliding(): boolean {
+    return this.currentState === MovementState.Slide;
+  }
+
+  public get requiresCrouchedStance(): boolean {
+    return this.isCrouched || this.isSliding;
+  }
+
   public updateGroundValidity(groundValid: boolean): void {
     if (!groundValid && this.isGrounded) {
       this.transitionTo(MovementState.Airborne);
@@ -43,15 +54,45 @@ export class MovementStateController {
       return;
     }
 
-    if (intent.crouchRequested || !intent.standClear) {
+    const sprintEligible =
+      intent.sprintRequested &&
+      intent.forwardInput >= intent.minimumSprintForwardInput;
+
+    if (this.isSliding) {
+      if (!intent.crouchHeld) {
+        if (!intent.standClear) {
+          this.transitionTo(MovementState.Crouch);
+        } else {
+          this.transitionTo(
+            sprintEligible ? MovementState.Sprint : MovementState.Grounded,
+          );
+        }
+        return;
+      }
+
+      if (intent.horizontalSpeed < intent.minimumSlideSpeed) {
+        this.transitionTo(MovementState.Crouch);
+      }
+      return;
+    }
+
+    const validSlideSource =
+      this.currentState === MovementState.Grounded || this.isSprinting;
+    if (
+      validSlideSource &&
+      intent.crouchPressed &&
+      intent.horizontalSpeed >= intent.minimumSlideSpeed
+    ) {
+      this.transitionTo(MovementState.Slide);
+      return;
+    }
+
+    if (intent.crouchHeld || !intent.standClear) {
       this.transitionTo(MovementState.Crouch);
       return;
     }
 
-    if (
-      intent.sprintRequested &&
-      intent.forwardInput >= intent.minimumSprintForwardInput
-    ) {
+    if (sprintEligible) {
       this.transitionTo(MovementState.Sprint);
       return;
     }
@@ -60,7 +101,7 @@ export class MovementStateController {
   }
 
   public tryStartJump(standClear = true): boolean {
-    if (!this.isGrounded || (this.isCrouched && !standClear)) {
+    if (!this.isGrounded || (this.requiresCrouchedStance && !standClear)) {
       return false;
     }
 

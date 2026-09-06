@@ -3,6 +3,10 @@ export interface MovementConfig {
   readonly sprintSpeed: number;
   readonly minimumSprintForwardInput: number;
   readonly crouchSpeedMultiplier: number;
+  readonly minimumSlideSpeed: number;
+  /** Horizontal slide speed loss in meters per second squared. */
+  readonly slideFriction: number;
+  readonly slideJumpHorizontalRetention: number;
   readonly groundAcceleration: number;
   readonly groundDeceleration: number;
   readonly gravity: number;
@@ -29,6 +33,9 @@ export const movementConfig: Readonly<MovementConfig> = Object.freeze({
   sprintSpeed: 8.5,
   minimumSprintForwardInput: 0.5,
   crouchSpeedMultiplier: 0.55,
+  minimumSlideSpeed: 6.5,
+  slideFriction: 4,
+  slideJumpHorizontalRetention: 0.9,
   groundAcceleration: 30,
   groundDeceleration: 24,
   gravity: -24,

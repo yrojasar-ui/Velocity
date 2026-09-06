@@ -21,18 +21,19 @@ export function getGroundProbeEndHeight(
 }
 
 export function isPhysicalCrouchRequired(
-  movementStateCrouched: boolean,
+  movementRequiresCrouchedStance: boolean,
   physicallyCrouched: boolean,
   crouchHeld: boolean,
   standClear: boolean,
-  acceptedCrouchJump: boolean,
+  acceptedLowProfileJump: boolean,
 ): boolean {
-  if (acceptedCrouchJump) {
+  if (acceptedLowProfileJump) {
     return false;
   }
 
   return (
-    movementStateCrouched || (physicallyCrouched && (crouchHeld || !standClear))
+    movementRequiresCrouchedStance ||
+    (physicallyCrouched && (crouchHeld || !standClear))
   );
 }
 

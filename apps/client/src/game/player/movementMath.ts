@@ -17,6 +17,10 @@ export function getGroundTargetSpeed(
       return config.sprintSpeed;
     case MovementState.Crouch:
       return config.walkSpeed * config.crouchSpeedMultiplier;
+    case MovementState.Slide:
+      throw new Error(
+        "Slide movement uses momentum instead of a target speed.",
+      );
     case MovementState.Airborne:
       throw new Error("Airborne movement has no ground target speed.");
   }

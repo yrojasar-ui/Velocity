@@ -20,6 +20,7 @@ export interface PlayerInputState {
   jumpPressed: boolean;
   sprintHeld: boolean;
   crouchHeld: boolean;
+  crouchPressed: boolean;
   pointerLocked: boolean;
   lookDeltaX: number;
   lookDeltaY: number;
@@ -33,6 +34,7 @@ export class PlayerInput {
     jumpPressed: false,
     sprintHeld: false,
     crouchHeld: false,
+    crouchPressed: false,
     pointerLocked: false,
     lookDeltaX: 0,
     lookDeltaY: 0,
@@ -93,6 +95,7 @@ export class PlayerInput {
     this.state.jumpPressed = this.keyboard.wasPressed(KEY_SPACE);
     this.state.sprintHeld = this.keyboard.isPressed(KEY_SHIFT);
     this.state.crouchHeld = this.keyboard.isPressed(KEY_CONTROL);
+    this.state.crouchPressed = this.keyboard.wasPressed(KEY_CONTROL);
     this.state.lookDeltaX = this.accumulatedLookX;
     this.state.lookDeltaY = this.accumulatedLookY;
     this.accumulatedLookX = 0;
@@ -133,6 +136,7 @@ export class PlayerInput {
     this.state.jumpPressed = false;
     this.state.sprintHeld = false;
     this.state.crouchHeld = false;
+    this.state.crouchPressed = false;
     this.state.lookDeltaX = 0;
     this.state.lookDeltaY = 0;
   }

@@ -3,4 +3,5 @@ export enum MovementState {
   Airborne = "Airborne",
   Sprint = "Sprint",
   Crouch = "Crouch",
+  Slide = "Slide",
 }

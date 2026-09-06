@@ -30,6 +30,12 @@ describe("ground movement", () => {
     ).toBeCloseTo(3.3, 10);
   });
 
+  it("rejects target-speed resolution for Slide", () => {
+    expect(() =>
+      getGroundTargetSpeed(MovementState.Slide, movementConfig),
+    ).toThrow("Slide movement uses momentum");
+  });
+
   it("accelerates toward the intended velocity", () => {
     const velocity = calculateGroundVelocity(
       { x: 0, z: 0 },

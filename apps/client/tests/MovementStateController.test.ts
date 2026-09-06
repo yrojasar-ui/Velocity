@@ -5,14 +5,18 @@ import {
   MovementStateController,
   type GroundedModeIntent,
 } from "../src/game/player/MovementStateController";
+import { movementConfig } from "../src/game/player/movementConfig";
 import { normalizeMovementInput } from "../src/game/player/movementMath";
 
 const DEFAULT_INTENT: GroundedModeIntent = {
-  crouchRequested: false,
+  crouchHeld: false,
+  crouchPressed: false,
   standClear: true,
   sprintRequested: false,
   forwardInput: 0,
-  minimumSprintForwardInput: 0.5,
+  minimumSprintForwardInput: movementConfig.minimumSprintForwardInput,
+  horizontalSpeed: 0,
+  minimumSlideSpeed: movementConfig.minimumSlideSpeed,
 };
 
 describe("MovementStateController", () => {
@@ -113,7 +117,7 @@ describe("MovementStateController", () => {
   it("enters Crouch from Sprint when crouch is requested", () => {
     const movementState = createSprintState();
 
-    updateGroundedMode(movementState, { crouchRequested: true });
+    updateGroundedMode(movementState, { crouchHeld: true });
 
     expect(movementState.current).toBe(MovementState.Crouch);
     expect(movementState.isCrouched).toBe(true);
@@ -123,7 +127,7 @@ describe("MovementStateController", () => {
   it("enters Crouch from Grounded when crouch is requested", () => {
     const movementState = createGroundedState();
 
-    updateGroundedMode(movementState, { crouchRequested: true });
+    updateGroundedMode(movementState, { crouchHeld: true });
 
     expect(movementState.current).toBe(MovementState.Crouch);
   });
@@ -131,7 +135,7 @@ describe("MovementStateController", () => {
   it("remains in Crouch while crouch is held", () => {
     const movementState = createCrouchState();
 
-    updateGroundedMode(movementState, { crouchRequested: true });
+    updateGroundedMode(movementState, { crouchHeld: true });
 
     expect(movementState.current).toBe(MovementState.Crouch);
   });
@@ -182,9 +186,168 @@ describe("MovementStateController", () => {
     expect(movementState.isGrounded).toBe(false);
   });
 
+  it("enters Slide from Sprint on a sufficient-speed crouch press", () => {
+    const movementState = createSprintState();
+
+    updateGroundedMode(movementState, {
+      crouchHeld: true,
+      crouchPressed: true,
+      horizontalSpeed: movementConfig.sprintSpeed,
+    });
+
+    expect(movementState.current).toBe(MovementState.Slide);
+    expect(movementState.isSliding).toBe(true);
+    expect(movementState.isCrouched).toBe(false);
+    expect(movementState.requiresCrouchedStance).toBe(true);
+    expect(movementState.isGrounded).toBe(true);
+  });
+
+  it("enters Slide from Grounded with sufficient real overspeed", () => {
+    const movementState = createGroundedState();
+
+    updateGroundedMode(movementState, {
+      crouchHeld: true,
+      crouchPressed: true,
+      horizontalSpeed: 7,
+    });
+
+    expect(movementState.current).toBe(MovementState.Slide);
+  });
+
+  it.each([
+    ["Grounded", createGroundedState],
+    ["Sprint", createSprintState],
+  ])(
+    "enters Crouch from %s when a crouch press is too slow",
+    (_label, createState) => {
+      const movementState = createState();
+
+      updateGroundedMode(movementState, {
+        crouchHeld: true,
+        crouchPressed: true,
+        horizontalSpeed: movementConfig.minimumSlideSpeed - 0.01,
+      });
+
+      expect(movementState.current).toBe(MovementState.Crouch);
+    },
+  );
+
+  it("does not enter Slide from a held Ctrl without a new press", () => {
+    const movementState = createGroundedState();
+
+    updateGroundedMode(movementState, {
+      crouchHeld: true,
+      crouchPressed: false,
+      horizontalSpeed: movementConfig.sprintSpeed,
+    });
+
+    expect(movementState.current).toBe(MovementState.Crouch);
+  });
+
+  it("does not start Slide directly from Crouch", () => {
+    const movementState = createCrouchState();
+
+    updateGroundedMode(movementState, {
+      crouchHeld: true,
+      crouchPressed: true,
+      horizontalSpeed: movementConfig.sprintSpeed,
+    });
+
+    expect(movementState.current).toBe(MovementState.Crouch);
+  });
+
+  it("keeps Slide active while Ctrl is held above minimum speed", () => {
+    const movementState = createSlideState();
+
+    updateGroundedMode(movementState, {
+      crouchHeld: true,
+      horizontalSpeed: movementConfig.minimumSlideSpeed + 0.01,
+    });
+
+    expect(movementState.current).toBe(MovementState.Slide);
+  });
+
+  it("exits Slide to Crouch below minimum speed while Ctrl is held", () => {
+    const movementState = createSlideState();
+
+    updateGroundedMode(movementState, {
+      crouchHeld: true,
+      horizontalSpeed: movementConfig.minimumSlideSpeed - 0.01,
+    });
+
+    expect(movementState.current).toBe(MovementState.Crouch);
+  });
+
+  it("exits Slide to Grounded when Ctrl is released in clear space", () => {
+    const movementState = createSlideState();
+
+    updateGroundedMode(movementState);
+
+    expect(movementState.current).toBe(MovementState.Grounded);
+  });
+
+  it("exits Slide to Sprint for an eligible release in clear space", () => {
+    const movementState = createSlideState();
+
+    updateGroundedMode(movementState, {
+      sprintRequested: true,
+      forwardInput: 1,
+    });
+
+    expect(movementState.current).toBe(MovementState.Sprint);
+  });
+
+  it("exits Slide to Crouch when standing is blocked", () => {
+    const movementState = createSlideState();
+
+    updateGroundedMode(movementState, { standClear: false });
+
+    expect(movementState.current).toBe(MovementState.Crouch);
+  });
+
+  it("transitions from Slide to Airborne when ground is lost", () => {
+    const movementState = createSlideState();
+
+    movementState.updateGroundValidity(false);
+
+    expect(movementState.current).toBe(MovementState.Airborne);
+    expect(movementState.isGrounded).toBe(false);
+  });
+
+  it("starts a jump from Slide when standing clearance is valid", () => {
+    const movementState = createSlideState();
+
+    const jumpStarted = movementState.tryStartJump(true);
+
+    expect(jumpStarted).toBe(true);
+    expect(movementState.current).toBe(MovementState.Airborne);
+  });
+
+  it("rejects a jump from Slide when standing clearance is blocked", () => {
+    const movementState = createSlideState();
+
+    const jumpStarted = movementState.tryStartJump(false);
+
+    expect(jumpStarted).toBe(false);
+    expect(movementState.current).toBe(MovementState.Slide);
+  });
+
+  it("cannot start Slide while Airborne", () => {
+    const movementState = new MovementStateController();
+
+    updateGroundedMode(movementState, {
+      crouchHeld: true,
+      crouchPressed: true,
+      horizontalSpeed: movementConfig.sprintSpeed,
+    });
+
+    expect(movementState.current).toBe(MovementState.Airborne);
+  });
+
   it.each([
     [MovementState.Sprint, createSprintState],
     [MovementState.Crouch, createCrouchState],
+    [MovementState.Slide, createSlideState],
   ])("keeps %s active while ground remains valid", (expected, createState) => {
     const movementState = createState();
 
@@ -199,9 +362,11 @@ describe("MovementStateController", () => {
 
     movementState.updateGroundValidity(false);
     updateGroundedMode(movementState, {
-      crouchRequested: true,
+      crouchHeld: true,
+      crouchPressed: true,
       sprintRequested: true,
       forwardInput: 1,
+      horizontalSpeed: movementConfig.sprintSpeed,
     });
 
     expect(movementState.current).toBe(MovementState.Airborne);
@@ -281,7 +446,17 @@ function createSprintState(): MovementStateController {
 
 function createCrouchState(): MovementStateController {
   const movementState = createGroundedState();
-  updateGroundedMode(movementState, { crouchRequested: true });
+  updateGroundedMode(movementState, { crouchHeld: true });
+  return movementState;
+}
+
+function createSlideState(): MovementStateController {
+  const movementState = createSprintState();
+  updateGroundedMode(movementState, {
+    crouchHeld: true,
+    crouchPressed: true,
+    horizontalSpeed: movementConfig.sprintSpeed,
+  });
   return movementState;
 }
 

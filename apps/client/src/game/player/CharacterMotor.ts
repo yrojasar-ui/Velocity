@@ -14,6 +14,10 @@ import {
   getGroundTargetSpeed,
   type HorizontalVector,
 } from "./movementMath";
+import {
+  calculateSlideVelocity,
+  getHorizontalJumpRetention,
+} from "./slideMath";
 import { isPhysicalCrouchRequired } from "./stanceMath";
 
 const DEGREES_TO_RADIANS = Math.PI / 180;
@@ -24,11 +28,14 @@ export class CharacterMotor {
   private readonly nextHorizontalVelocity: HorizontalVector = { x: 0, z: 0 };
   private readonly nextVelocity = new Vec3();
   private readonly groundedModeIntent: GroundedModeIntent = {
-    crouchRequested: false,
+    crouchHeld: false,
+    crouchPressed: false,
     standClear: true,
     sprintRequested: false,
     forwardInput: 0,
     minimumSprintForwardInput: 0,
+    horizontalSpeed: 0,
+    minimumSlideSpeed: 0,
   };
 
   public constructor(
@@ -58,18 +65,33 @@ export class CharacterMotor {
       !this.stance.isCrouched ||
       (shouldCheckStandClearance && this.standClearanceProbe.canStand());
 
-    this.groundedModeIntent.crouchRequested = input.crouchHeld;
+    this.groundedModeIntent.crouchHeld = input.crouchHeld;
+    this.groundedModeIntent.crouchPressed = input.crouchPressed;
     this.groundedModeIntent.standClear = standClear;
     this.groundedModeIntent.sprintRequested = input.sprintHeld;
     this.groundedModeIntent.forwardInput = input.moveZ;
     this.groundedModeIntent.minimumSprintForwardInput =
       this.config.minimumSprintForwardInput;
+    this.groundedModeIntent.horizontalSpeed = Math.hypot(
+      currentVelocity.x,
+      currentVelocity.z,
+    );
+    this.groundedModeIntent.minimumSlideSpeed = this.config.minimumSlideSpeed;
     this.movementState.updateGroundedMode(this.groundedModeIntent);
     this.nextVelocity.copy(currentVelocity);
 
-    if (this.movementState.isGrounded) {
-      this.currentHorizontalVelocity.x = currentVelocity.x;
-      this.currentHorizontalVelocity.z = currentVelocity.z;
+    this.currentHorizontalVelocity.x = currentVelocity.x;
+    this.currentHorizontalVelocity.z = currentVelocity.z;
+    if (this.movementState.isSliding) {
+      calculateSlideVelocity(
+        this.currentHorizontalVelocity,
+        this.config.slideFriction,
+        frameDeltaSeconds,
+        this.nextHorizontalVelocity,
+      );
+      this.nextVelocity.x = this.nextHorizontalVelocity.x;
+      this.nextVelocity.z = this.nextHorizontalVelocity.z;
+    } else if (this.movementState.isGrounded) {
       this.movementInput.x = input.moveX;
       this.movementInput.z = input.moveZ;
 
@@ -88,20 +110,27 @@ export class CharacterMotor {
       this.nextVelocity.z = this.nextHorizontalVelocity.z;
     }
 
-    const crouchedAtJumpStart = this.stance.isCrouched;
+    const jumpSource = this.movementState.current;
+    const lowProfileAtJumpStart = this.stance.isCrouched;
     const jumpStartedThisFrame =
       input.jumpPressed && this.movementState.tryStartJump(standClear);
     if (jumpStartedThisFrame) {
+      const horizontalRetention = getHorizontalJumpRetention(
+        jumpSource,
+        this.config.slideJumpHorizontalRetention,
+      );
+      this.nextVelocity.x *= horizontalRetention;
+      this.nextVelocity.z *= horizontalRetention;
       // A direct vertical launch speed keeps the jump predictable while physics owns gravity.
       this.nextVelocity.y = this.config.jumpVelocity;
     }
 
     const crouchRequired = isPhysicalCrouchRequired(
-      this.movementState.isCrouched,
+      this.movementState.requiresCrouchedStance,
       this.stance.isCrouched,
       input.crouchHeld,
       standClear,
-      jumpStartedThisFrame && crouchedAtJumpStart,
+      jumpStartedThisFrame && lowProfileAtJumpStart,
     );
     this.stance.update(crouchRequired, standClear, frameDeltaSeconds);
 
