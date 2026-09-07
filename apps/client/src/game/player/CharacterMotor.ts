@@ -1,8 +1,13 @@
 import { math, Vec3, type RigidBodyComponent } from "playcanvas";
 
-import type { GroundProbe } from "../../physics/GroundProbe";
+import {
+  canAcceptLanding,
+  hasGroundSupport,
+  type GroundProbe,
+} from "../../physics/GroundProbe";
 import type { StandClearanceProbe } from "../../physics/StandClearanceProbe";
 import type {
+  GroundValidity,
   GroundedModeIntent,
   MovementStateController,
 } from "./MovementStateController";
@@ -27,6 +32,10 @@ export class CharacterMotor {
   private readonly movementInput: HorizontalVector = { x: 0, z: 0 };
   private readonly nextHorizontalVelocity: HorizontalVector = { x: 0, z: 0 };
   private readonly nextVelocity = new Vec3();
+  private readonly groundValidity: GroundValidity = {
+    supported: false,
+    landingValid: false,
+  };
   private readonly groundedModeIntent: GroundedModeIntent = {
     crouchHeld: false,
     crouchPressed: false,
@@ -54,9 +63,19 @@ export class CharacterMotor {
   ): void {
     const frameDeltaSeconds = math.clamp(deltaTime, 0, 0.1);
     const currentVelocity = this.rigidBody.linearVelocity;
-    this.movementState.updateGroundValidity(
-      this.groundProbe.isGrounded(currentVelocity.y),
+    const groundSample = this.groundProbe.sample();
+    this.groundValidity.supported = hasGroundSupport(
+      groundSample,
+      currentVelocity.y,
+      this.config.maximumGroundedUpwardVelocity,
     );
+    this.groundValidity.landingValid = canAcceptLanding(
+      groundSample,
+      currentVelocity.y,
+      this.config.maximumGroundedUpwardVelocity,
+      this.config.groundContactTolerance,
+    );
+    this.movementState.updateGroundValidity(this.groundValidity);
     const shouldCheckStandClearance =
       this.stance.isCrouched &&
       (!input.crouchHeld ||

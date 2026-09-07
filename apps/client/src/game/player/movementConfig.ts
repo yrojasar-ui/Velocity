@@ -24,6 +24,8 @@ export interface MovementConfig {
   readonly crouchCameraTransitionSpeed: number;
   readonly cameraFovDegrees: number;
   readonly groundProbeDistance: number;
+  /** Maximum vertical capsule-to-ground separation accepted as landing contact. */
+  readonly groundContactTolerance: number;
   readonly minimumGroundNormalY: number;
   readonly maximumGroundedUpwardVelocity: number;
 }
@@ -53,6 +55,7 @@ export const movementConfig: Readonly<MovementConfig> = Object.freeze({
   crouchCameraTransitionSpeed: 2,
   cameraFovDegrees: 75,
   groundProbeDistance: 0.18,
+  groundContactTolerance: 0.02,
   minimumGroundNormalY: 0.7,
   maximumGroundedUpwardVelocity: 0.1,
 });

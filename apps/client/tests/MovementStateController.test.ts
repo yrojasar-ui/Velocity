@@ -3,6 +3,7 @@ import { describe, expect, it } from "vitest";
 import { MovementState } from "../src/game/player/MovementState";
 import {
   MovementStateController,
+  type GroundValidity,
   type GroundedModeIntent,
 } from "../src/game/player/MovementStateController";
 import { movementConfig } from "../src/game/player/movementConfig";
@@ -17,6 +18,18 @@ const DEFAULT_INTENT: GroundedModeIntent = {
   minimumSprintForwardInput: movementConfig.minimumSprintForwardInput,
   horizontalSpeed: 0,
   minimumSlideSpeed: movementConfig.minimumSlideSpeed,
+};
+const SUPPORTED_GROUND: GroundValidity = {
+  supported: true,
+  landingValid: true,
+};
+const SUPPORT_ONLY: GroundValidity = {
+  supported: true,
+  landingValid: false,
+};
+const NO_GROUND: GroundValidity = {
+  supported: false,
+  landingValid: false,
 };
 
 describe("MovementStateController", () => {
@@ -43,16 +56,16 @@ describe("MovementStateController", () => {
   it("transitions from Grounded to Airborne when ground is lost", () => {
     const movementState = createGroundedState();
 
-    movementState.updateGroundValidity(false);
+    movementState.updateGroundValidity(NO_GROUND);
 
     expect(movementState.current).toBe(MovementState.Airborne);
     expect(movementState.isGrounded).toBe(false);
   });
 
-  it("keeps Grounded active while ground remains valid", () => {
+  it("keeps Grounded active with support that is not a new landing", () => {
     const movementState = createGroundedState();
 
-    movementState.updateGroundValidity(true);
+    movementState.updateGroundValidity(SUPPORT_ONLY);
 
     expect(movementState.current).toBe(MovementState.Grounded);
     expect(movementState.isGrounded).toBe(true);
@@ -171,7 +184,7 @@ describe("MovementStateController", () => {
   it("transitions from Sprint to Airborne when ground is lost", () => {
     const movementState = createSprintState();
 
-    movementState.updateGroundValidity(false);
+    movementState.updateGroundValidity(NO_GROUND);
 
     expect(movementState.current).toBe(MovementState.Airborne);
     expect(movementState.isGrounded).toBe(false);
@@ -180,7 +193,7 @@ describe("MovementStateController", () => {
   it("transitions from Crouch to Airborne when ground is lost", () => {
     const movementState = createCrouchState();
 
-    movementState.updateGroundValidity(false);
+    movementState.updateGroundValidity(NO_GROUND);
 
     expect(movementState.current).toBe(MovementState.Airborne);
     expect(movementState.isGrounded).toBe(false);
@@ -308,7 +321,7 @@ describe("MovementStateController", () => {
   it("transitions from Slide to Airborne when ground is lost", () => {
     const movementState = createSlideState();
 
-    movementState.updateGroundValidity(false);
+    movementState.updateGroundValidity(NO_GROUND);
 
     expect(movementState.current).toBe(MovementState.Airborne);
     expect(movementState.isGrounded).toBe(false);
@@ -351,7 +364,7 @@ describe("MovementStateController", () => {
   ])("keeps %s active while ground remains valid", (expected, createState) => {
     const movementState = createState();
 
-    movementState.updateGroundValidity(true);
+    movementState.updateGroundValidity(SUPPORT_ONLY);
 
     expect(movementState.current).toBe(expected);
     expect(movementState.isGrounded).toBe(true);
@@ -360,7 +373,7 @@ describe("MovementStateController", () => {
   it("remains Airborne and non-grounded while ground is invalid", () => {
     const movementState = new MovementStateController();
 
-    movementState.updateGroundValidity(false);
+    movementState.updateGroundValidity(NO_GROUND);
     updateGroundedMode(movementState, {
       crouchHeld: true,
       crouchPressed: true,
@@ -373,10 +386,19 @@ describe("MovementStateController", () => {
     expect(movementState.isGrounded).toBe(false);
   });
 
-  it("transitions from Airborne to Grounded on landing", () => {
+  it("keeps Airborne active when ground is support-only proximity", () => {
     const movementState = new MovementStateController();
 
-    movementState.updateGroundValidity(true);
+    movementState.updateGroundValidity(SUPPORT_ONLY);
+
+    expect(movementState.current).toBe(MovementState.Airborne);
+    expect(movementState.isGrounded).toBe(false);
+  });
+
+  it("transitions from Airborne to Grounded on a valid landing", () => {
+    const movementState = new MovementStateController();
+
+    movementState.updateGroundValidity(SUPPORTED_GROUND);
 
     expect(movementState.current).toBe(MovementState.Grounded);
     expect(movementState.isGrounded).toBe(true);
@@ -431,7 +453,7 @@ describe("MovementStateController", () => {
 
 function createGroundedState(): MovementStateController {
   const movementState = new MovementStateController();
-  movementState.updateGroundValidity(true);
+  movementState.updateGroundValidity(SUPPORTED_GROUND);
   return movementState;
 }
 

@@ -11,6 +11,11 @@ export interface GroundedModeIntent {
   minimumSlideSpeed: number;
 }
 
+export interface GroundValidity {
+  supported: boolean;
+  landingValid: boolean;
+}
+
 export class MovementStateController {
   private currentState = MovementState.Airborne;
 
@@ -38,13 +43,13 @@ export class MovementStateController {
     return this.isCrouched || this.isSliding;
   }
 
-  public updateGroundValidity(groundValid: boolean): void {
-    if (!groundValid && this.isGrounded) {
+  public updateGroundValidity(validity: Readonly<GroundValidity>): void {
+    if (!validity.supported && this.isGrounded) {
       this.transitionTo(MovementState.Airborne);
       return;
     }
 
-    if (groundValid && this.currentState === MovementState.Airborne) {
+    if (validity.landingValid && this.currentState === MovementState.Airborne) {
       this.transitionTo(MovementState.Grounded);
     }
   }
