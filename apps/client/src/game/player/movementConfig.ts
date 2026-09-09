@@ -9,6 +9,10 @@ export interface MovementConfig {
   readonly slideJumpHorizontalRetention: number;
   readonly groundAcceleration: number;
   readonly groundDeceleration: number;
+  /** Horizontal velocity change available to airborne movement input in m/s². */
+  readonly airAcceleration: number;
+  /** Air-input speed ceiling; inherited horizontal overspeed is preserved. */
+  readonly maxAirSpeed: number;
   readonly gravity: number;
   readonly jumpVelocity: number;
   readonly degreesPerMouseCount: number;
@@ -40,6 +44,8 @@ export const movementConfig: Readonly<MovementConfig> = Object.freeze({
   slideJumpHorizontalRetention: 0.9,
   groundAcceleration: 30,
   groundDeceleration: 24,
+  airAcceleration: 10,
+  maxAirSpeed: 7.5,
   gravity: -24,
   jumpVelocity: 8,
   degreesPerMouseCount: 0.1,

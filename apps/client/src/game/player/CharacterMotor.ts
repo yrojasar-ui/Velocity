@@ -13,6 +13,7 @@ import type {
 } from "./MovementStateController";
 import type { PlayerInputState } from "./PlayerInput";
 import type { PlayerStanceController } from "./PlayerStanceController";
+import { calculateAirVelocity } from "./airMath";
 import type { MovementConfig } from "./movementConfig";
 import {
   calculateGroundVelocity,
@@ -121,6 +122,22 @@ export class CharacterMotor {
         getGroundTargetSpeed(this.movementState.current, this.config),
         this.config.groundAcceleration,
         this.config.groundDeceleration,
+        frameDeltaSeconds,
+        this.nextHorizontalVelocity,
+      );
+
+      this.nextVelocity.x = this.nextHorizontalVelocity.x;
+      this.nextVelocity.z = this.nextHorizontalVelocity.z;
+    } else {
+      this.movementInput.x = input.moveX;
+      this.movementInput.z = input.moveZ;
+
+      calculateAirVelocity(
+        this.currentHorizontalVelocity,
+        this.movementInput,
+        viewYawDegrees * DEGREES_TO_RADIANS,
+        this.config.airAcceleration,
+        this.config.maxAirSpeed,
         frameDeltaSeconds,
         this.nextHorizontalVelocity,
       );

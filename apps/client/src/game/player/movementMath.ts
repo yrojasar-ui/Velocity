@@ -41,6 +41,22 @@ export function normalizeMovementInput(
   return output;
 }
 
+export function resolveWorldMovementDirection(
+  movementInput: Readonly<HorizontalVector>,
+  viewYawRadians: number,
+  output: HorizontalVector,
+): HorizontalVector {
+  normalizeMovementInput(movementInput.x, movementInput.z, output);
+  const localX = output.x;
+  const localZ = output.z;
+  const sine = Math.sin(viewYawRadians);
+  const cosine = Math.cos(viewYawRadians);
+
+  output.x = localX * cosine - localZ * sine;
+  output.z = -localX * sine - localZ * cosine;
+  return output;
+}
+
 export function calculateGroundVelocity(
   currentVelocity: Readonly<HorizontalVector>,
   movementInput: Readonly<HorizontalVector>,
@@ -52,15 +68,13 @@ export function calculateGroundVelocity(
   output: HorizontalVector,
 ): HorizontalVector {
   const inputMagnitude = Math.hypot(movementInput.x, movementInput.z);
-  const inputScale = inputMagnitude > 1 ? 1 / inputMagnitude : 1;
-  const normalizedX = movementInput.x * inputScale;
-  const normalizedZ = movementInput.z * inputScale;
-  const sine = Math.sin(viewYawRadians);
-  const cosine = Math.cos(viewYawRadians);
-  const targetX = (normalizedX * cosine - normalizedZ * sine) * maximumSpeed;
-  const targetZ = (-normalizedX * sine - normalizedZ * cosine) * maximumSpeed;
-  const changeX = targetX - currentVelocity.x;
-  const changeZ = targetZ - currentVelocity.z;
+  const currentX = currentVelocity.x;
+  const currentZ = currentVelocity.z;
+  resolveWorldMovementDirection(movementInput, viewYawRadians, output);
+  const targetX = output.x * maximumSpeed;
+  const targetZ = output.z * maximumSpeed;
+  const changeX = targetX - currentX;
+  const changeZ = targetZ - currentZ;
   const changeLength = Math.hypot(changeX, changeZ);
   const rate =
     inputMagnitude > MINIMUM_VECTOR_LENGTH ? acceleration : deceleration;
@@ -71,8 +85,8 @@ export function calculateGroundVelocity(
     output.z = targetZ;
   } else {
     const changeScale = maximumChange / changeLength;
-    output.x = currentVelocity.x + changeX * changeScale;
-    output.z = currentVelocity.z + changeZ * changeScale;
+    output.x = currentX + changeX * changeScale;
+    output.z = currentZ + changeZ * changeScale;
   }
 
   return output;
