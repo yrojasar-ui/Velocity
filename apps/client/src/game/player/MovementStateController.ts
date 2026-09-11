@@ -1,4 +1,9 @@
-import { MovementState } from "./MovementState";
+import {
+  isGroundedMovementState,
+  isTraversalMovementState,
+  MovementState,
+  type TraversalMovementState,
+} from "./MovementState";
 
 export interface GroundedModeIntent {
   crouchHeld: boolean;
@@ -24,7 +29,7 @@ export class MovementStateController {
   }
 
   public get isGrounded(): boolean {
-    return this.currentState !== MovementState.Airborne;
+    return isGroundedMovementState(this.currentState);
   }
 
   public get isSprinting(): boolean {
@@ -39,11 +44,27 @@ export class MovementStateController {
     return this.currentState === MovementState.Slide;
   }
 
+  public get isMantling(): boolean {
+    return this.currentState === MovementState.Mantle;
+  }
+
+  public get isVaulting(): boolean {
+    return this.currentState === MovementState.Vault;
+  }
+
+  public get isTraversing(): boolean {
+    return isTraversalMovementState(this.currentState);
+  }
+
   public get requiresCrouchedStance(): boolean {
     return this.isCrouched || this.isSliding;
   }
 
   public updateGroundValidity(validity: Readonly<GroundValidity>): void {
+    if (this.isTraversing) {
+      return;
+    }
+
     if (!validity.supported && this.isGrounded) {
       this.transitionTo(MovementState.Airborne);
       return;
@@ -112,6 +133,27 @@ export class MovementStateController {
 
     this.transitionTo(MovementState.Airborne);
     return true;
+  }
+
+  public startTraversal(state: TraversalMovementState): boolean {
+    if (this.isTraversing) {
+      return false;
+    }
+
+    this.transitionTo(state);
+    return true;
+  }
+
+  public completeTraversal(): void {
+    if (this.isTraversing) {
+      this.transitionTo(MovementState.Grounded);
+    }
+  }
+
+  public cancelTraversal(): void {
+    if (this.isTraversing) {
+      this.transitionTo(MovementState.Airborne);
+    }
   }
 
   public reset(): void {

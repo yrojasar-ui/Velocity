@@ -29,11 +29,13 @@ import { MovementStateController } from "./game/player/MovementStateController";
 import { PlayerInput } from "./game/player/PlayerInput";
 import { PlayerLook } from "./game/player/PlayerLook";
 import { PlayerStanceController } from "./game/player/PlayerStanceController";
+import { TraversalController } from "./game/player/TraversalController";
 import { createPlayerRig } from "./game/player/createPlayerRig";
 import { movementConfig } from "./game/player/movementConfig";
 import { createMovementLab } from "./game/world/movementLab/MovementLab";
 import { GroundProbe } from "./physics/GroundProbe";
 import { StandClearanceProbe } from "./physics/StandClearanceProbe";
+import { TraversalProbe } from "./physics/TraversalProbe";
 import { initializePhysics } from "./physics/initializePhysics";
 import "./styles.css";
 
@@ -154,13 +156,23 @@ async function startClient(): Promise<ClientRuntime> {
     player.pitchPivot,
     movementConfig,
   );
+  const traversalProbe = new TraversalProbe(
+    rigidBodySystem,
+    physicsWorld,
+    player.root,
+    player.collision,
+    movementConfig,
+  );
+  const traversal = new TraversalController(movementConfig);
   const characterMotor = new CharacterMotor(
     player.rigidBody,
     groundProbe,
     standClearanceProbe,
+    traversalProbe,
     movementState,
     jumpForgiveness,
     stance,
+    traversal,
     movementConfig,
   );
   const pointerLock = new PointerLock(
@@ -184,6 +196,7 @@ async function startClient(): Promise<ClientRuntime> {
     player.rigidBody,
     movementLab.spawnPosition,
     () => {
+      traversal.reset();
       movementState.reset();
       jumpForgiveness.reset();
       stance.prepareForReset();
@@ -222,6 +235,7 @@ async function startClient(): Promise<ClientRuntime> {
       movementLabControls.destroy();
       pointerLock.destroy();
       playerInput.destroy();
+      traversalProbe.destroy();
       application.destroy();
     },
   };

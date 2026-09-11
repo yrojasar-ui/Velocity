@@ -1,9 +1,10 @@
-import { MovementState } from "./MovementState";
-
-export type GroundedMovementState = Exclude<
+import {
+  isGroundedMovementState,
   MovementState,
-  MovementState.Airborne
->;
+  type GroundedMovementState,
+} from "./MovementState";
+
+export type { GroundedMovementState } from "./MovementState";
 
 export class JumpForgivenessController {
   private coyoteSecondsRemaining = 0;
@@ -72,8 +73,12 @@ export class JumpForgivenessController {
       return null;
     }
 
-    if (currentState !== MovementState.Airborne) {
+    if (isGroundedMovementState(currentState)) {
       return currentState;
+    }
+
+    if (currentState !== MovementState.Airborne) {
+      return null;
     }
 
     return this.coyoteActive ? this.departureSource : null;

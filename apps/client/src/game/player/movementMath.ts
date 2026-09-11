@@ -23,6 +23,9 @@ export function getGroundTargetSpeed(
       );
     case MovementState.Airborne:
       throw new Error("Airborne movement has no ground target speed.");
+    case MovementState.Mantle:
+    case MovementState.Vault:
+      throw new Error("Traversal movement has no ground target speed.");
   }
 }
 

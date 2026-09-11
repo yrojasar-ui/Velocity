@@ -6,15 +6,17 @@ import {
   type GroundProbe,
 } from "../../physics/GroundProbe";
 import type { StandClearanceProbe } from "../../physics/StandClearanceProbe";
+import type { TraversalProbe } from "../../physics/TraversalProbe";
 import type {
   GroundValidity,
   GroundedModeIntent,
   MovementStateController,
 } from "./MovementStateController";
 import type { JumpForgivenessController } from "./JumpForgivenessController";
-import { MovementState } from "./MovementState";
+import { isGroundedMovementState, MovementState } from "./MovementState";
 import type { PlayerInputState } from "./PlayerInput";
 import type { PlayerStanceController } from "./PlayerStanceController";
+import type { TraversalController } from "./TraversalController";
 import { calculateAirVelocity } from "./airMath";
 import type { MovementConfig } from "./movementConfig";
 import {
@@ -27,6 +29,11 @@ import {
   getHorizontalJumpRetention,
 } from "./slideMath";
 import { isPhysicalCrouchRequired } from "./stanceMath";
+import {
+  canAttemptTraversalFromState,
+  canStartTraversalFromState,
+  hasTraversalForwardIntent,
+} from "./traversalMath";
 
 const DEGREES_TO_RADIANS = Math.PI / 180;
 
@@ -35,6 +42,7 @@ export class CharacterMotor {
   private readonly movementInput: HorizontalVector = { x: 0, z: 0 };
   private readonly nextHorizontalVelocity: HorizontalVector = { x: 0, z: 0 };
   private readonly nextVelocity = new Vec3();
+  private readonly zeroAngularVelocity = new Vec3();
   private readonly groundValidity: GroundValidity = {
     supported: false,
     landingValid: false,
@@ -54,9 +62,11 @@ export class CharacterMotor {
     private readonly rigidBody: RigidBodyComponent,
     private readonly groundProbe: GroundProbe,
     private readonly standClearanceProbe: StandClearanceProbe,
+    private readonly traversalProbe: TraversalProbe,
     private readonly movementState: MovementStateController,
     private readonly jumpForgiveness: JumpForgivenessController,
     private readonly stance: PlayerStanceController,
+    private readonly traversal: TraversalController,
     private readonly config: Readonly<MovementConfig>,
   ) {}
 
@@ -67,9 +77,6 @@ export class CharacterMotor {
   ): void {
     const frameDeltaSeconds = math.clamp(deltaTime, 0, 0.1);
     this.jumpForgiveness.advance(frameDeltaSeconds);
-    if (input.jumpPressed) {
-      this.jumpForgiveness.recordJumpPress();
-    }
 
     const currentVelocity = this.rigidBody.linearVelocity;
     const groundSample = this.groundProbe.sample();
@@ -87,7 +94,7 @@ export class CharacterMotor {
     const stateBeforeGroundUpdate = this.movementState.current;
     this.movementState.updateGroundValidity(this.groundValidity);
     if (
-      stateBeforeGroundUpdate !== MovementState.Airborne &&
+      isGroundedMovementState(stateBeforeGroundUpdate) &&
       this.movementState.current === MovementState.Airborne
     ) {
       this.jumpForgiveness.armCoyote(stateBeforeGroundUpdate);
@@ -98,12 +105,27 @@ export class CharacterMotor {
       this.jumpForgiveness.clearCoyote();
     }
 
-    const pendingJumpHasSource =
+    if (this.movementState.isTraversing) {
+      if (this.traversal.isActive) {
+        this.updateTraversal(frameDeltaSeconds);
+        return;
+      }
+
+      this.movementState.cancelTraversal();
+    }
+
+    const bufferedJumpHasSource =
       this.jumpForgiveness.getEffectiveJumpSource(
         this.movementState.current,
       ) !== null;
+    const freshJumpHasSource =
+      input.jumpPressed &&
+      (isGroundedMovementState(this.movementState.current) ||
+        (this.movementState.current === MovementState.Airborne &&
+          this.jumpForgiveness.coyoteActive));
     const shouldCheckStandClearance =
-      this.stance.isCrouched && (!input.crouchHeld || pendingJumpHasSource);
+      this.stance.isCrouched &&
+      (!input.crouchHeld || bufferedJumpHasSource || freshJumpHasSource);
     const standClear =
       !this.stance.isCrouched ||
       (shouldCheckStandClearance && this.standClearanceProbe.canStand());
@@ -121,6 +143,16 @@ export class CharacterMotor {
     );
     this.groundedModeIntent.minimumSlideSpeed = this.config.minimumSlideSpeed;
     this.movementState.updateGroundedMode(this.groundedModeIntent);
+
+    if (this.tryStartTraversal(input, viewYawDegrees, currentVelocity)) {
+      this.updateTraversal(frameDeltaSeconds);
+      return;
+    }
+
+    if (input.jumpPressed) {
+      this.jumpForgiveness.recordJumpPress();
+    }
+
     this.nextVelocity.copy(currentVelocity);
 
     this.currentHorizontalVelocity.x = currentVelocity.x;
@@ -213,5 +245,59 @@ export class CharacterMotor {
     this.stance.update(crouchRequired, standClear, frameDeltaSeconds);
 
     this.rigidBody.linearVelocity = this.nextVelocity;
+  }
+
+  private tryStartTraversal(
+    input: Readonly<PlayerInputState>,
+    viewYawDegrees: number,
+    currentVelocity: Readonly<Vec3>,
+  ): boolean {
+    if (
+      !input.jumpPressed ||
+      !hasTraversalForwardIntent(
+        input.moveZ,
+        this.config.minimumTraversalForwardInput,
+      ) ||
+      !canAttemptTraversalFromState(
+        this.movementState.current,
+        !this.stance.isCrouched,
+      )
+    ) {
+      return false;
+    }
+
+    const candidate = this.traversalProbe.findCandidate(viewYawDegrees);
+    if (
+      candidate === null ||
+      !canStartTraversalFromState(
+        candidate.kind,
+        this.movementState.current,
+        !this.stance.isCrouched,
+      ) ||
+      !this.traversal.start(candidate, currentVelocity)
+    ) {
+      return false;
+    }
+
+    if (!this.movementState.startTraversal(candidate.kind)) {
+      this.traversal.reset();
+      return false;
+    }
+
+    this.jumpForgiveness.reset();
+    return true;
+  }
+
+  private updateTraversal(deltaTimeSeconds: number): void {
+    const step = this.traversal.advance(deltaTimeSeconds);
+    this.nextVelocity.set(0, 0, 0);
+    this.rigidBody.linearVelocity = this.nextVelocity;
+    this.rigidBody.angularVelocity = this.zeroAngularVelocity;
+    this.rigidBody.teleport(step.position);
+
+    if (step.completed) {
+      this.movementState.completeTraversal();
+      this.rigidBody.linearVelocity = this.traversal.exitLinearVelocity;
+    }
   }
 }

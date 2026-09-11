@@ -34,6 +34,14 @@ export interface MovementConfig {
   readonly groundContactTolerance: number;
   readonly minimumGroundNormalY: number;
   readonly maximumGroundedUpwardVelocity: number;
+  readonly minimumTraversalForwardInput: number;
+  readonly traversalProbeDistance: number;
+  readonly minimumVaultHeight: number;
+  readonly maximumVaultHeight: number;
+  readonly maximumVaultDepth: number;
+  readonly maximumMantleHeight: number;
+  readonly vaultDurationSeconds: number;
+  readonly mantleDurationSeconds: number;
 }
 
 export const movementConfig: Readonly<MovementConfig> = Object.freeze({
@@ -68,4 +76,12 @@ export const movementConfig: Readonly<MovementConfig> = Object.freeze({
   groundContactTolerance: 0.02,
   minimumGroundNormalY: 0.7,
   maximumGroundedUpwardVelocity: 0.1,
+  minimumTraversalForwardInput: 0.5,
+  traversalProbeDistance: 0.85,
+  minimumVaultHeight: 0.35,
+  maximumVaultHeight: 0.75,
+  maximumVaultDepth: 1.5,
+  maximumMantleHeight: 1.5,
+  vaultDurationSeconds: 0.28,
+  mantleDurationSeconds: 0.38,
 });
