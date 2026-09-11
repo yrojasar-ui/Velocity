@@ -11,6 +11,8 @@ import type {
   GroundedModeIntent,
   MovementStateController,
 } from "./MovementStateController";
+import type { JumpForgivenessController } from "./JumpForgivenessController";
+import { MovementState } from "./MovementState";
 import type { PlayerInputState } from "./PlayerInput";
 import type { PlayerStanceController } from "./PlayerStanceController";
 import { calculateAirVelocity } from "./airMath";
@@ -53,6 +55,7 @@ export class CharacterMotor {
     private readonly groundProbe: GroundProbe,
     private readonly standClearanceProbe: StandClearanceProbe,
     private readonly movementState: MovementStateController,
+    private readonly jumpForgiveness: JumpForgivenessController,
     private readonly stance: PlayerStanceController,
     private readonly config: Readonly<MovementConfig>,
   ) {}
@@ -63,6 +66,11 @@ export class CharacterMotor {
     deltaTime: number,
   ): void {
     const frameDeltaSeconds = math.clamp(deltaTime, 0, 0.1);
+    this.jumpForgiveness.advance(frameDeltaSeconds);
+    if (input.jumpPressed) {
+      this.jumpForgiveness.recordJumpPress();
+    }
+
     const currentVelocity = this.rigidBody.linearVelocity;
     const groundSample = this.groundProbe.sample();
     this.groundValidity.supported = hasGroundSupport(
@@ -76,11 +84,26 @@ export class CharacterMotor {
       this.config.maximumGroundedUpwardVelocity,
       this.config.groundContactTolerance,
     );
+    const stateBeforeGroundUpdate = this.movementState.current;
     this.movementState.updateGroundValidity(this.groundValidity);
+    if (
+      stateBeforeGroundUpdate !== MovementState.Airborne &&
+      this.movementState.current === MovementState.Airborne
+    ) {
+      this.jumpForgiveness.armCoyote(stateBeforeGroundUpdate);
+    } else if (
+      stateBeforeGroundUpdate === MovementState.Airborne &&
+      this.movementState.isGrounded
+    ) {
+      this.jumpForgiveness.clearCoyote();
+    }
+
+    const pendingJumpHasSource =
+      this.jumpForgiveness.getEffectiveJumpSource(
+        this.movementState.current,
+      ) !== null;
     const shouldCheckStandClearance =
-      this.stance.isCrouched &&
-      (!input.crouchHeld ||
-        (input.jumpPressed && this.movementState.isGrounded));
+      this.stance.isCrouched && (!input.crouchHeld || pendingJumpHasSource);
     const standClear =
       !this.stance.isCrouched ||
       (shouldCheckStandClearance && this.standClearanceProbe.canStand());
@@ -146,13 +169,32 @@ export class CharacterMotor {
       this.nextVelocity.z = this.nextHorizontalVelocity.z;
     }
 
-    const jumpSource = this.movementState.current;
+    const jumpSource = this.jumpForgiveness.getEffectiveJumpSource(
+      this.movementState.current,
+    );
     const lowProfileAtJumpStart = this.stance.isCrouched;
-    const jumpStartedThisFrame =
-      input.jumpPressed && this.movementState.tryStartJump(standClear);
-    if (jumpStartedThisFrame) {
+    let startedJumpSource: typeof jumpSource = null;
+    if (jumpSource !== null) {
+      const lowProfileJump =
+        jumpSource === MovementState.Crouch ||
+        jumpSource === MovementState.Slide;
+      if (!lowProfileJump || standClear) {
+        const jumpAuthorized = this.movementState.isGrounded
+          ? this.movementState.tryStartJump(standClear)
+          : true;
+        if (jumpAuthorized) {
+          startedJumpSource = jumpSource;
+        }
+      }
+
+      // A rejected low-profile request must not fire later after clearance changes.
+      this.jumpForgiveness.consumeJumpRequest();
+    }
+
+    const jumpStartedThisFrame = startedJumpSource !== null;
+    if (startedJumpSource !== null) {
       const horizontalRetention = getHorizontalJumpRetention(
-        jumpSource,
+        startedJumpSource,
         this.config.slideJumpHorizontalRetention,
       );
       this.nextVelocity.x *= horizontalRetention;

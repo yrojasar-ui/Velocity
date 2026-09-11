@@ -15,6 +15,8 @@ export interface MovementConfig {
   readonly maxAirSpeed: number;
   readonly gravity: number;
   readonly jumpVelocity: number;
+  readonly coyoteTimeSeconds: number;
+  readonly jumpBufferTimeSeconds: number;
   readonly degreesPerMouseCount: number;
   readonly maxLookPitchDegrees: number;
   readonly playerHeight: number;
@@ -48,6 +50,8 @@ export const movementConfig: Readonly<MovementConfig> = Object.freeze({
   maxAirSpeed: 7.5,
   gravity: -24,
   jumpVelocity: 8,
+  coyoteTimeSeconds: 0.1,
+  jumpBufferTimeSeconds: 0.1,
   degreesPerMouseCount: 0.1,
   maxLookPitchDegrees: 89,
   playerHeight: 1.8,

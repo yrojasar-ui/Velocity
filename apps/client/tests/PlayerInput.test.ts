@@ -2,6 +2,7 @@ import {
   KEY_C,
   KEY_CONTROL,
   KEY_SHIFT,
+  KEY_SPACE,
   type EventHandle,
   type Keyboard,
   type Mouse,
@@ -10,7 +11,22 @@ import { describe, expect, it } from "vitest";
 
 import { PlayerInput } from "../src/game/player/PlayerInput";
 
-describe("PlayerInput stance modifiers", () => {
+describe("PlayerInput", () => {
+  it("reports jumpPressed only on the Space press edge", () => {
+    const harness = createInputHarness();
+    harness.input.setControlActive(true);
+    harness.input.read();
+    harness.pressedKeys.add(KEY_SPACE);
+    harness.pressedThisFrame.add(KEY_SPACE);
+
+    expect(harness.input.read().jumpPressed).toBe(true);
+
+    harness.pressedThisFrame.clear();
+
+    expect(harness.input.read().jumpPressed).toBe(false);
+    harness.input.destroy();
+  });
+
   it("requires held Sprint/Crouch keys to be released after controls activate", () => {
     const harness = createInputHarness();
     harness.pressedKeys.add(KEY_SHIFT);

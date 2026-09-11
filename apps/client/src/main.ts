@@ -24,6 +24,7 @@ import { PointerLock } from "./core/input/PointerLock";
 import { MovementLabControls } from "./debug/MovementLabControls";
 import { MovementTelemetry } from "./debug/MovementTelemetry";
 import { CharacterMotor } from "./game/player/CharacterMotor";
+import { JumpForgivenessController } from "./game/player/JumpForgivenessController";
 import { MovementStateController } from "./game/player/MovementStateController";
 import { PlayerInput } from "./game/player/PlayerInput";
 import { PlayerLook } from "./game/player/PlayerLook";
@@ -136,6 +137,10 @@ async function startClient(): Promise<ClientRuntime> {
     movementConfig,
   );
   const movementState = new MovementStateController();
+  const jumpForgiveness = new JumpForgivenessController(
+    movementConfig.coyoteTimeSeconds,
+    movementConfig.jumpBufferTimeSeconds,
+  );
   const standClearanceProbe = new StandClearanceProbe(
     rigidBodySystem,
     player.root,
@@ -154,6 +159,7 @@ async function startClient(): Promise<ClientRuntime> {
     groundProbe,
     standClearanceProbe,
     movementState,
+    jumpForgiveness,
     stance,
     movementConfig,
   );
@@ -179,6 +185,7 @@ async function startClient(): Promise<ClientRuntime> {
     movementLab.spawnPosition,
     () => {
       movementState.reset();
+      jumpForgiveness.reset();
       stance.prepareForReset();
     },
   );
