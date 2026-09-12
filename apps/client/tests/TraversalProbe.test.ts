@@ -22,6 +22,7 @@ interface SceneOptions {
   topNormalY?: number;
   blockedSweep?: number;
   playerFeetY?: number;
+  playerCapsuleHeight?: number;
 }
 
 interface TestBox {
@@ -68,7 +69,7 @@ describe("TraversalProbe geometry", () => {
   ] as const)("detects a %.2f m %s", (height, expectedKind) => {
     const scene = createScene({ height });
 
-    const candidate = scene.probe.findCandidate(0);
+    const candidate = scene.probe.findCandidate(0, scene.probe.currentFeetY);
 
     expect(candidate?.kind).toBe(expectedKind);
     expect(candidate?.obstacleHeight).toBeCloseTo(height);
@@ -79,7 +80,7 @@ describe("TraversalProbe geometry", () => {
   it("measures height from raised player feet", () => {
     const scene = createScene({ floorY: 3, playerFeetY: 3, height: 0.5 });
 
-    const candidate = scene.probe.findCandidate(0);
+    const candidate = scene.probe.findCandidate(0, scene.probe.currentFeetY);
 
     expect(candidate?.kind).toBe(MovementState.Vault);
     expect(candidate?.obstacleHeight).toBeCloseTo(0.5);
@@ -89,63 +90,67 @@ describe("TraversalProbe geometry", () => {
   it.each([1.51, 2])("rejects a %.2f m obstacle", (height) => {
     const scene = createScene({ height });
 
-    expect(scene.probe.findCandidate(0)).toBeNull();
+    expect(scene.probe.findCandidate(0, scene.probe.currentFeetY)).toBeNull();
     scene.probe.destroy();
   });
 
   it("rejects a wall without a reachable top", () => {
     const scene = createScene({ includeTop: false, height: 1 });
 
-    expect(scene.probe.findCandidate(0)).toBeNull();
+    expect(scene.probe.findCandidate(0, scene.probe.currentFeetY)).toBeNull();
     scene.probe.destroy();
   });
 
   it("rejects a steep top surface", () => {
     const scene = createScene({ height: 1, topNormalY: 0.5 });
 
-    expect(scene.probe.findCandidate(0)).toBeNull();
+    expect(scene.probe.findCandidate(0, scene.probe.currentFeetY)).toBeNull();
     scene.probe.destroy();
   });
 
   it.each([1.51, 1.7])("rejects a %.2f m-deep Vault obstacle", (depth) => {
     const scene = createScene({ height: 0.5, depth });
 
-    expect(scene.probe.findCandidate(0)).toBeNull();
+    expect(scene.probe.findCandidate(0, scene.probe.currentFeetY)).toBeNull();
     scene.probe.destroy();
   });
 
   it("accepts the exact 1.50 m Vault depth boundary", () => {
     const scene = createScene({ height: 0.5, depth: 1.5 });
 
-    expect(scene.probe.findCandidate(0)?.kind).toBe(MovementState.Vault);
+    expect(scene.probe.findCandidate(0, scene.probe.currentFeetY)?.kind).toBe(
+      MovementState.Vault,
+    );
     scene.probe.destroy();
   });
 
   it("detects a thin low obstacle as a Vault", () => {
     const scene = createScene({ height: 0.5, depth: 0.4 });
 
-    expect(scene.probe.findCandidate(0)?.kind).toBe(MovementState.Vault);
+    expect(scene.probe.findCandidate(0, scene.probe.currentFeetY)?.kind).toBe(
+      MovementState.Vault,
+    );
     scene.probe.destroy();
   });
 
   it("rejects a Mantle ledge too shallow to support the inset destination", () => {
     const scene = createScene({ height: 1, depth: 0.3 });
 
-    expect(scene.probe.findCandidate(0)).toBeNull();
+    expect(scene.probe.findCandidate(0, scene.probe.currentFeetY)).toBeNull();
     scene.probe.destroy();
   });
 
   it("rejects a Vault without far-side walkable support", () => {
     const scene = createScene({ height: 0.5, includeFarSupport: false });
 
-    expect(scene.probe.findCandidate(0)).toBeNull();
+    expect(scene.probe.findCandidate(0, scene.probe.currentFeetY)).toBeNull();
     scene.probe.destroy();
   });
 
   it("rejects blocked destination capsule clearance", () => {
     const scene = createScene({ height: 1, blockedSweep: 1 });
 
-    expect(scene.probe.findCandidate(0)).toBeNull();
+    expect(scene.probe.findCandidate(0, scene.probe.currentFeetY)).toBeNull();
     expect(scene.sweepCalls()).toBe(1);
     scene.probe.destroy();
   });
@@ -153,7 +158,7 @@ describe("TraversalProbe geometry", () => {
   it("rejects a blocked capsule path after destination validation", () => {
     const scene = createScene({ height: 1, blockedSweep: 2 });
 
-    expect(scene.probe.findCandidate(0)).toBeNull();
+    expect(scene.probe.findCandidate(0, scene.probe.currentFeetY)).toBeNull();
     expect(scene.sweepCalls()).toBe(2);
     scene.probe.destroy();
   });
@@ -161,14 +166,16 @@ describe("TraversalProbe geometry", () => {
   it("ignores dynamic traversal obstacles", () => {
     const scene = createScene({ obstacleBodyType: "dynamic" });
 
-    expect(scene.probe.findCandidate(0)).toBeNull();
+    expect(scene.probe.findCandidate(0, scene.probe.currentFeetY)).toBeNull();
     scene.probe.destroy();
   });
 
   it("uses a standing capsule-volume sweep with centralized skin", () => {
     const scene = createScene({ height: 1 });
 
-    expect(scene.probe.findCandidate(0)?.kind).toBe(MovementState.Mantle);
+    expect(scene.probe.findCandidate(0, scene.probe.currentFeetY)?.kind).toBe(
+      MovementState.Mantle,
+    );
     expect(scene.sweepShape()).toEqual({
       radius: movementConfig.playerRadius - 0.02,
       cylinderHeight:
@@ -179,8 +186,82 @@ describe("TraversalProbe geometry", () => {
   });
 });
 
+describe("TraversalProbe stable airborne height authorization", () => {
+  it("rejects the exact 2.00 m exploit with current airborne feet at 0.57 m", () => {
+    const scene = createScene({ floorY: 0, playerFeetY: 0.57, height: 2 });
+
+    expect(scene.probe.currentFeetY).toBeCloseTo(0.57);
+    // This control reproduces the old mistaken reference through real front/top rays.
+    const oldReferenceCandidate = scene.probe.findCandidate(
+      0,
+      scene.probe.currentFeetY,
+    );
+    expect(oldReferenceCandidate?.kind).toBe(MovementState.Mantle);
+    expect(oldReferenceCandidate?.obstacleHeight).toBeCloseTo(1.43);
+
+    expect(scene.probe.findCandidate(0, 0)).toBeNull();
+    expect(scene.topHitHeights()).toContain(2);
+    scene.probe.destroy();
+  });
+
+  it("still Mantles 1.50 m from the same 0.57 m airborne rise and current path start", () => {
+    const scene = createScene({ floorY: 0, playerFeetY: 0.57, height: 1.5 });
+
+    const candidate = scene.probe.findCandidate(0, 0);
+
+    expect(candidate?.kind).toBe(MovementState.Mantle);
+    expect(candidate?.obstacleHeight).toBeCloseTo(1.5);
+    expect(candidate?.path.start.y).toBeCloseTo(1.47);
+    expect(candidate?.path.target.y).toBeCloseTo(2.4);
+    expect(scene.rayStarts()[0]?.y).toBeGreaterThan(0.57);
+    scene.probe.destroy();
+  });
+
+  it.each([
+    [1.5, MovementState.Mantle],
+    [2, null],
+  ] as const)(
+    "uses takeoff 3.00 m while airborne at 3.57 m for a %.2f m relative ledge",
+    (height, expectedKind) => {
+      const scene = createScene({ floorY: 3, playerFeetY: 3.57, height });
+
+      const candidate = scene.probe.findCandidate(0, 3);
+
+      expect(candidate?.kind ?? null).toBe(expectedKind);
+      expect(scene.topHitHeights()).toContain(3 + height);
+      if (expectedKind !== null) {
+        expect(candidate?.obstacleHeight).toBeCloseTo(1.5);
+        expect(candidate?.path.start.y).toBeCloseTo(4.47);
+        expect(candidate?.path.target.y).toBeCloseTo(5.4);
+      }
+      scene.probe.destroy();
+    },
+  );
+
+  it("does not fall back to elevated current feet when no reference exists", () => {
+    const scene = createScene({ floorY: 0, playerFeetY: 0.57, height: 2 });
+
+    expect(scene.probe.findCandidate(0, null)).toBeNull();
+    expect(scene.rayStarts()).toHaveLength(0);
+    expect(scene.sweepCalls()).toBe(0);
+    scene.probe.destroy();
+  });
+
+  it.each([movementConfig.playerHeight, movementConfig.crouchHeight])(
+    "reads actual physical feet from a %.2f m capsule on a raised surface",
+    (playerCapsuleHeight) => {
+      const scene = createScene({ playerFeetY: 3, playerCapsuleHeight });
+
+      expect(scene.probe.currentFeetY).toBeCloseTo(3);
+      scene.probe.destroy();
+    },
+  );
+});
+
 function createScene(options: SceneOptions = {}): {
   probe: TraversalProbe;
+  rayStarts(): readonly Vec3[];
+  topHitHeights(): readonly number[];
   sweepCalls(): number;
   sweepShape(): { radius: number; cylinderHeight: number } | null;
 } {
@@ -188,6 +269,10 @@ function createScene(options: SceneOptions = {}): {
   const floorY = options.floorY ?? playerFeetY;
   const obstacleHeight = options.height ?? 0.5;
   const obstacleDepth = options.depth ?? 1.35;
+  const playerCapsuleHeight =
+    options.playerCapsuleHeight ?? movementConfig.playerHeight;
+  const rayStarts: Vec3[] = [];
+  const topHitHeights: number[] = [];
   const obstacle = createPhysicsEntity(
     "Obstacle",
     options.obstacleBodyType ?? "static",
@@ -214,10 +299,10 @@ function createScene(options: SceneOptions = {}): {
 
   const player = {
     getPosition: (): Vec3 =>
-      new Vec3(0, playerFeetY + movementConfig.playerHeight / 2, 0),
+      new Vec3(0, playerFeetY + playerCapsuleHeight / 2, 0),
   } as unknown as Entity;
   const collision = {
-    height: movementConfig.playerHeight,
+    height: playerCapsuleHeight,
   } as CollisionComponent;
   const rigidBodySystem = {
     raycastAll(
@@ -225,6 +310,7 @@ function createScene(options: SceneOptions = {}): {
       end: Readonly<Vec3>,
       rayOptions?: { filterCallback?: (entity: Entity) => boolean },
     ): RaycastResult[] {
+      rayStarts.push(new Vec3().copy(start));
       const results: RaycastResult[] = [];
       for (const box of boxes) {
         if (rayOptions?.filterCallback?.(box.entity) === false) {
@@ -232,6 +318,9 @@ function createScene(options: SceneOptions = {}): {
         }
         const hit = intersectBox(start, end, box);
         if (hit !== null) {
+          if (hit.normal.y > 0 && box.entity === obstacle) {
+            topHitHeights.push(hit.point.y);
+          }
           results.push(hit);
         }
       }
@@ -253,6 +342,8 @@ function createScene(options: SceneOptions = {}): {
 
   return {
     probe,
+    rayStarts: () => rayStarts,
+    topHitHeights: () => topHitHeights,
     sweepCalls: () => ammo.sweepCalls,
     sweepShape: () => ammo.shape,
   };

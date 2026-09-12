@@ -20,7 +20,9 @@ describe("CharacterMotor traversal priority", () => {
   ] as const)("starts %s from %s on fresh forward Space", (source, kind) => {
     const harness = createHarness(source);
     if (source === MovementState.Airborne) {
+      harness.update();
       harness.setGroundSample(NO_GROUND);
+      harness.update();
     }
     harness.setTraversalCandidate(createCandidate(kind));
 
@@ -68,6 +70,7 @@ describe("CharacterMotor traversal priority", () => {
 
   it("gives valid Mantle priority over coyote jump without injecting jump speed", () => {
     const harness = createHarness(MovementState.Grounded);
+    harness.update();
     harness.setGroundSample(NO_GROUND);
     harness.setVelocity(0, -8, -4);
     harness.setTraversalCandidate(createCandidate(MovementState.Mantle));
@@ -83,6 +86,7 @@ describe("CharacterMotor traversal priority", () => {
 
   it("preserves coyote jump fallback when no Mantle is valid", () => {
     const harness = createHarness(MovementState.Grounded);
+    harness.update();
     harness.setGroundSample(NO_GROUND);
 
     harness.update({ moveZ: 1, jumpPressed: true });
@@ -109,7 +113,10 @@ describe("CharacterMotor traversal priority", () => {
 
   it("rejects Airborne Vault without inventing a traversal", () => {
     const harness = createHarness(MovementState.Airborne);
+    harness.update();
     harness.setGroundSample(NO_GROUND);
+    harness.update({}, movementConfig.coyoteTimeSeconds);
+    harness.update({}, movementConfig.coyoteTimeSeconds);
     harness.setVelocity(0, -2, 0);
     harness.setTraversalCandidate(createCandidate(MovementState.Vault));
 
@@ -207,6 +214,7 @@ describe("CharacterMotor traversal isolation", () => {
     harness.update({ moveZ: 1, jumpPressed: true });
 
     harness.traversal.reset();
+    harness.resetMotor();
     harness.movementState.reset();
     harness.forgiveness.reset();
 

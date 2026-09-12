@@ -38,6 +38,7 @@ import {
 const DEGREES_TO_RADIANS = Math.PI / 180;
 
 export class CharacterMotor {
+  private airborneTraversalReferenceFeetY: number | null = null;
   private readonly currentHorizontalVelocity: HorizontalVector = { x: 0, z: 0 };
   private readonly movementInput: HorizontalVector = { x: 0, z: 0 };
   private readonly nextHorizontalVelocity: HorizontalVector = { x: 0, z: 0 };
@@ -69,6 +70,10 @@ export class CharacterMotor {
     private readonly traversal: TraversalController,
     private readonly config: Readonly<MovementConfig>,
   ) {}
+
+  public reset(): void {
+    this.airborneTraversalReferenceFeetY = null;
+  }
 
   public update(
     input: Readonly<PlayerInputState>,
@@ -103,6 +108,12 @@ export class CharacterMotor {
       this.movementState.isGrounded
     ) {
       this.jumpForgiveness.clearCoyote();
+    }
+
+    // Capture after ground validation so support loss cannot replace the takeoff height.
+    // A buffered landing jump must capture its new surface before jumping again below.
+    if (this.movementState.isGrounded) {
+      this.airborneTraversalReferenceFeetY = this.traversalProbe.currentFeetY;
     }
 
     if (this.movementState.isTraversing) {
@@ -266,7 +277,10 @@ export class CharacterMotor {
       return false;
     }
 
-    const candidate = this.traversalProbe.findCandidate(viewYawDegrees);
+    const candidate = this.traversalProbe.findCandidate(
+      viewYawDegrees,
+      this.airborneTraversalReferenceFeetY,
+    );
     if (
       candidate === null ||
       !canStartTraversalFromState(
@@ -284,6 +298,7 @@ export class CharacterMotor {
       return false;
     }
 
+    this.airborneTraversalReferenceFeetY = null;
     this.jumpForgiveness.reset();
     return true;
   }

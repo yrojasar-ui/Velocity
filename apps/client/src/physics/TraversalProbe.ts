@@ -105,19 +105,24 @@ export class TraversalProbe {
     };
   }
 
+  public get currentFeetY(): number {
+    return this.player.getPosition().y - this.collision.height / 2;
+  }
+
   public findCandidate(
     viewYawDegrees: number,
+    heightReferenceFeetY: number | null,
   ): Readonly<TraversalCandidate> | null {
-    if (this.destroyed) {
+    if (this.destroyed || heightReferenceFeetY === null) {
       return null;
     }
 
     this.playerPosition.copy(this.player.getPosition());
-    const feetY = this.playerPosition.y - this.collision.height / 2;
+    const currentFeetY = this.playerPosition.y - this.collision.height / 2;
     const yawRadians = (viewYawDegrees * Math.PI) / 180;
     this.forward.set(-Math.sin(yawRadians), 0, -Math.cos(yawRadians));
 
-    const frontHit = this.findFrontObstacle(feetY);
+    const frontHit = this.findFrontObstacle(currentFeetY);
     if (frontHit === null) {
       return null;
     }
@@ -126,13 +131,16 @@ export class TraversalProbe {
       frontHit.entity,
       frontHit.point.x + this.forward.x * TOP_SURFACE_PROBE_INSET_METERS,
       frontHit.point.z + this.forward.z * TOP_SURFACE_PROBE_INSET_METERS,
-      feetY,
+      currentFeetY,
     );
     if (topHit === null) {
       return null;
     }
 
-    const obstacleHeight = calculateTraversalHeight(topHit.point.y, feetY);
+    const obstacleHeight = calculateTraversalHeight(
+      topHit.point.y,
+      heightReferenceFeetY,
+    );
     const kind = classifyTraversalHeight(
       obstacleHeight,
       this.config.minimumVaultHeight,
@@ -150,7 +158,7 @@ export class TraversalProbe {
     this.path.kind = kind;
 
     if (kind === MovementState.Vault) {
-      return this.buildVaultCandidate(frontHit, topHit, feetY);
+      return this.buildVaultCandidate(frontHit, topHit, currentFeetY);
     }
 
     return this.buildMantleCandidate(frontHit, topHit);

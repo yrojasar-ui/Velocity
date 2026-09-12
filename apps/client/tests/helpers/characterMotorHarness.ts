@@ -49,12 +49,14 @@ export interface MotorHarness {
   readonly stanceCrouched: boolean;
   readonly standClearanceChecks: number;
   readonly traversalProbeChecks: number;
+  readonly traversalHeightReferences: readonly (number | null)[];
   readonly position: Vec3;
   readonly velocity: Vec3;
   setGroundSample(sample: Readonly<GroundProbeSample>): void;
   setStandClear(clear: boolean): void;
   setTraversalCandidate(candidate: Readonly<TraversalCandidate> | null): void;
   setVelocity(x: number, y: number, z: number): void;
+  resetMotor(): void;
   update(
     input?: Partial<PlayerInputState>,
     deltaTime?: number,
@@ -70,9 +72,13 @@ export function createHarness(
   let standClear = true;
   let standClearanceChecks = 0;
   let traversalProbeChecks = 0;
+  const traversalHeightReferences: (number | null)[] = [];
   let traversalCandidate: Readonly<TraversalCandidate> | null = null;
   let stanceCrouched = initiallyCrouched;
-  const position = new Vec3(0, movementConfig.playerHeight / 2, 0);
+  let capsuleHeight = initiallyCrouched
+    ? movementConfig.crouchHeight
+    : movementConfig.playerHeight;
+  const position = new Vec3(0, capsuleHeight / 2, 0);
   const velocity = new Vec3();
   const rigidBody = {} as RigidBodyComponent;
   Object.defineProperty(rigidBody, "linearVelocity", {
@@ -100,9 +106,16 @@ export function createHarness(
     },
   } as StandClearanceProbe;
   const traversalProbe = {
-    findCandidate(): Readonly<TraversalCandidate> | null {
+    get currentFeetY(): number {
+      return position.y - capsuleHeight / 2;
+    },
+    findCandidate(
+      _viewYawDegrees: number,
+      heightReferenceFeetY: number | null,
+    ): Readonly<TraversalCandidate> | null {
       traversalProbeChecks += 1;
-      return traversalCandidate;
+      traversalHeightReferences.push(heightReferenceFeetY);
+      return heightReferenceFeetY === null ? null : traversalCandidate;
     },
   } as unknown as TraversalProbe;
   const stance = {
@@ -115,6 +128,11 @@ export function createHarness(
       } else if (clearance) {
         stanceCrouched = false;
       }
+      const nextHeight = stanceCrouched
+        ? movementConfig.crouchHeight
+        : movementConfig.playerHeight;
+      position.y += (nextHeight - capsuleHeight) / 2;
+      capsuleHeight = nextHeight;
     },
   } as unknown as PlayerStanceController;
   const movementState = new MovementStateController();
@@ -142,6 +160,7 @@ export function createHarness(
     forgiveness,
     movementState,
     traversal,
+    traversalHeightReferences,
     get stanceCrouched(): boolean {
       return stanceCrouched;
     },
@@ -164,6 +183,9 @@ export function createHarness(
     },
     setVelocity(x, y, z): void {
       velocity.set(x, y, z);
+    },
+    resetMotor(): void {
+      motor.reset();
     },
     update(input = {}, deltaTime = 0, viewYawDegrees = 0): void {
       motor.update({ ...NO_INPUT, ...input }, viewYawDegrees, deltaTime);

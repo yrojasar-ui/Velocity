@@ -196,6 +196,7 @@ async function startClient(): Promise<ClientRuntime> {
     player.rigidBody,
     movementLab.spawnPosition,
     () => {
+      characterMotor.reset();
       traversal.reset();
       movementState.reset();
       jumpForgiveness.reset();
